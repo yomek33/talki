@@ -13,6 +13,7 @@ type User struct {
 	Name     string `gorm:"type:varchar(255)" json:"name"`
 	Password string `gorm:"type:varchar(255)" json:"password"`
 	GoogleID string `gorm:"type:varchar(255)" json:"google_id"`
+	Articles []Article
 }
 
 type Dialogue struct {
