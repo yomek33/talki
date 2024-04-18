@@ -13,13 +13,14 @@ type User struct {
 	Name     string `gorm:"type:varchar(255)" json:"name"`
 	Password string `gorm:"type:varchar(255)" json:"password"`
 	GoogleID string `gorm:"type:varchar(255)" json:"google_id"`
+	Deleted  bool   `gorm:"default:false"`
 	Articles []Article
 }
 
 type Dialogue struct {
 	gorm.Model
-	ID           uint      `gorm:"primaryKey"`
-	UserID       uint      `gorm:"index"`
+	ID           uint `gorm:"primaryKey"`
+	UserID       uint `gorm:"index"`
 	InputText    string
 	ResponseText string
 	CreatedAt    time.Time
@@ -28,11 +29,11 @@ type Dialogue struct {
 
 type Progress struct {
 	gorm.Model
-	ID            uint      `gorm:"primaryKey"`
-	UserID        uint      `gorm:"index"`
-	PhraseID      uint      `gorm:"index"`
-	Status        string
-	LastReviewed  time.Time
-	User          User
-	Phrase        Phrase
+	ID           uint `gorm:"primaryKey"`
+	UserID       uint `gorm:"index"`
+	PhraseID     uint `gorm:"index"`
+	Status       string
+	LastReviewed time.Time
+	User         User
+	Phrase       Phrase
 }
