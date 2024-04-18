@@ -4,23 +4,22 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/repository"
 )
 
 const (
-    ErrInvalidArticleID = "Invalid article ID format"
-    ErrInvalidArticleData = "Invalid article data"
-    ErrForbiddenModify = "Forbidden to modify this article"
-    ErrFailedUpdateArticle = "Failed to update article"
-    ErrInvalidID = "Invalid ID"
-    ErrFailedDeleteArticle = "Failed to delete article"
-    ErrFailedRetrieveArticles = "Failed to retrieve articles"
-	ErrFailedCreateArticle = "Failed to create article"
-	ErrArticleNotFound = "Article not found"
+    ErrInvalidArticleID = "invalid article ID format"
+    ErrInvalidArticleData = "invalid article data"
+    ErrForbiddenModify = "forbidden to modify this article"
+    ErrFailedUpdateArticle = "failed to update article"
+    ErrInvalidID = "invalid ID"
+    ErrFailedDeleteArticle = "failed to delete article"
+    ErrFailedRetrieveArticles = "failed to retrieve articles"
+    ErrFailedCreateArticle = "failed to create article"
+    ErrArticleNotFound = "article not found"
 )
-
 type ArticleHandler struct {
 	ArticleRepo repository.ArticleRepository
 }

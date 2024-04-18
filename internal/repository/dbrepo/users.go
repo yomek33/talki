@@ -38,10 +38,7 @@ func (repo *UserRepo) CreateUser(user *models.User) error {
 	return tx.Commit().Error
 }
 
-func (repo *UserRepo) GetUserByID(userID string) (*models.User, error) {
-	if userID == "" {
-		return nil, errors.New("get user: " + ErrUserIDRequired)
-	}
+func (repo *UserRepo) GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
 	err := repo.DB.Where("user_id = ?", userID).Preload("Articles").First(&user).Error
 	if err != nil {
@@ -82,11 +79,7 @@ func (repo *UserRepo) UpdateUser(user *models.User) error {
 	return tx.Commit().Error
 }
 
-func (repo *UserRepo) DeleteUser(userID string) error {
-	if userID == "" {
-		return errors.New("delete user: " + ErrUserIDRequired)
-	}
-
+func (repo *UserRepo) DeleteUser(userID uint) error {
 	tx := repo.DB.Begin()
 	if tx.Error != nil {
 		return tx.Error

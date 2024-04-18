@@ -38,11 +38,14 @@ func (repo *ArticleRepo) GetArticleByID(id uint, userID uint) (*models.Article, 
 	return &article, nil
 }
 
-func (repo *ArticleRepo) UpdateArticle(article *models.Article) error {
+func (repo *ArticleRepo) UpdateArticle(id uint, article *models.Article) error {
 	if article == nil {
 		return errors.New("update article: article cannot be nil")
 	}
-	return repo.DB.Save(article).Error
+	if id != article.ID {
+		return errors.New("update article: article ID does not match the provided id")
+	}
+	return repo.DB.Model(&models.Article{}).Where("id = ?", id).Updates(article).Error
 }
 
 func (repo *ArticleRepo) DeleteArticle(id uint, userID uint) error {

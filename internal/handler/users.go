@@ -4,21 +4,20 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/repository"
 )
 
 const (
-	ErrInvalidUserData = "Invalid user data"
-	ErrCouldNotCreateUser = "Could not create user"
-	ErrInvalidUserToken = "Invalid user token"
-	ErrUserNotFound = "User not found"
-	ErrInvalidUserID = "Invalid user ID"
-	ErrCouldNotUpdateUser = "Could not update user"
-	ErrCouldNotDeleteUser = "Could not delete user"
+	ErrInvalidUserData = "invalid user data"
+	ErrCouldNotCreateUser = "could not create user"
+	ErrInvalidUserToken = "invalid user token"
+	ErrUserNotFound = "user not found"
+	ErrInvalidUserID = "invalid user ID"
+	ErrCouldNotUpdateUser = "could not update user"
+	ErrCouldNotDeleteUser = "could not delete user"
 )
-
 type UserHandler struct {
 	UserRepo repository.UserRepository
 }
@@ -31,9 +30,9 @@ func NewUserHandler(repo repository.UserRepository) *UserHandler {
 
 func (h *UserHandler) HandleUsers(e *echo.Echo) {
 	e.POST("/users", h.CreateUser)
-	e.GET("/users/:id", h.GetUserByID)
-	e.PUT("/users/:id", h.UpdateUser)
-	e.DELETE("/users/:id", h.DeleteUser)
+	e.GET("/users", h.GetUserByID)
+	e.PUT("/users", h.UpdateUser)
+	e.DELETE("/users", h.DeleteUser)
 }
 
 func (h *UserHandler) CreateUser(c echo.Context) error {
@@ -71,7 +70,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	if user.ID != userID {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserID})
 	}
-	if err := h.UserRepo.UpdateUser(userID, &user); err != nil {
+	if err := h.UserRepo.UpdateUser(&user); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotUpdateUser})
 	}
 	return c.JSON(http.StatusOK, user)
