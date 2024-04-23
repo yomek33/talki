@@ -1,9 +1,13 @@
 package handler
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/repository"
@@ -59,6 +63,9 @@ func (h *ArticleHandler) CreateArticle(c echo.Context) error {
 	if err := c.Bind(&article); err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleData)
 	}
+    if err := validateArticle(&article); err != nil {
+        return respondWithError(c, http.StatusBadRequest, err.Error())
+    }
 	if err := h.ArticleRepo.CreateArticle(&article); err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrFailedCreateArticle)
 	}
@@ -82,6 +89,9 @@ func (h *ArticleHandler) UpdateArticle(c echo.Context) error {
     }
     if article.UserID != userID {
         return respondWithError(c, http.StatusForbidden, ErrForbiddenModify)
+    }
+    if err := validateArticle(&article); err != nil {
+        return respondWithError(c, http.StatusBadRequest, err.Error())
     }
     if err := h.ArticleRepo.UpdateArticle(uint(id), &article); err != nil {
         return respondWithError(c, http.StatusInternalServerError, ErrFailedUpdateArticle)
@@ -120,4 +130,20 @@ func (h *ArticleHandler) GetAllArticles(c echo.Context) error {
 
 func respondWithError(c echo.Context, code int, message string) error {
 	return c.JSON(code, map[string]string{"error": message})
+}
+
+
+func validateArticle(article *models.Article) error {
+	validate := validator.New()
+	errorMessages := make([]string, 0)
+	if err := validate.Struct(article); err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			errorMessage := fmt.Sprintf("Error: %s", strings.ToLower(err.Field()))
+			errorMessages = append(errorMessages, errorMessage)
+		}
+		if len(errorMessages) > 0 {
+			return errors.New(strings.Join(errorMessages, ", "))
+		}
+	}
+	return nil
 }

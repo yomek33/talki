@@ -2,8 +2,11 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/repository"
@@ -40,6 +43,10 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
 	}
+	if err := validateUser(&user); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+	}
+
 	if err := h.UserRepo.CreateUser(&user); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotCreateUser})
 	}
@@ -66,6 +73,9 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	var user models.User
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
+	}
+	if err := validateUser(&user); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 	if user.ID != userID {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserID})
@@ -94,4 +104,19 @@ func getUserIDByContext(c echo.Context) (uint, error) {
 		return 0, errors.New(ErrInvalidUserID)
 	}
 	return id, nil
+}
+
+func validateUser(user *models.User) error {
+	validate := validator.New()
+	errorMessages := make([]string, 0)
+	if err := validate.Struct(user); err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			errorMessage := fmt.Sprintf("Error: %s", strings.ToLower(err.Field()))
+			errorMessages = append(errorMessages, errorMessage)
+		}
+		if len(errorMessages) > 0 {
+			return errors.New(strings.Join(errorMessages, ", "))
+		}
+	}
+	return nil
 }

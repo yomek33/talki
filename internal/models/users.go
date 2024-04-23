@@ -8,11 +8,11 @@ import (
 
 type User struct {
 	gorm.Model
-	UserID   string `gorm:"type:varchar(255);primaryKey" json:"user_id"`
-	Email    string `gorm:"type:varchar(255)" json:"email"`
-	Name     string `gorm:"type:varchar(255)" json:"name"`
-	Password string `gorm:"type:varchar(255)" json:"password"`
-	GoogleID string `gorm:"type:varchar(255)" json:"google_id"`
+	UserID   string `gorm:"type:varchar(255);primaryKey" json:"user_id" validate:"required"`
+	Email    string `gorm:"type:varchar(255)" json:"email" validate:"required,email"`
+	Name     string `gorm:"type:varchar(255)" json:"name" validate:"required"`
+	Password string `gorm:"type:varchar(255)" json:"password" validate:"required"`
+	GoogleID string `gorm:"type:varchar(255)" json:"google_id" `
 	Deleted  bool   `gorm:"default:false"`
 	Articles []Article
 }
@@ -20,20 +20,20 @@ type User struct {
 type Dialogue struct {
 	gorm.Model
 	ID           uint `gorm:"primaryKey"`
-	UserID       uint `gorm:"index"`
-	InputText    string
-	ResponseText string
-	CreatedAt    time.Time
-	User         User
+	UserID       uint `gorm:"index" validate:"required"`
+	InputText    string `validate:"required"`
+	ResponseText string `validate:"required"`
+	CreatedAt    time.Time `validate:"required"`
+	User         User `validate:"required"`
 }
 
 type Progress struct {
 	gorm.Model
 	ID           uint `gorm:"primaryKey"`
-	UserID       uint `gorm:"index"`
-	PhraseID     uint `gorm:"index"`
-	Status       string
-	LastReviewed time.Time
-	User         User
+	UserID       uint `gorm:"index" validate:"required"`
+	PhraseID     uint `gorm:"index" validate:"required"`
+	Status       string `validate:"required"`
+	LastReviewed time.Time `validate:"required"`
+	User         User `validate:"required"`
 	Phrase       Phrase
 }
