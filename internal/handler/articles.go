@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
-	"github.com/yomek33/talki/internal/models"
-	"github.com/yomek33/talki/internal/repository"
+	"github.com/yomek33/talki/models"
+	"github.com/yomek33/talki/services"
 )
 
 const (
@@ -24,25 +24,20 @@ const (
     ErrFailedCreateArticle = "failed to create article"
     ErrArticleNotFound = "article not found"
 )
-type ArticleHandler struct {
-	ArticleRepo repository.ArticleRepository
+type ArticleHandler interface {
+    CreateArticle(c echo.Context) error
+    GetArticleByID(c echo.Context) error
+    UpdateArticle(c echo.Context) error
+    DeleteArticle(c echo.Context) error
+    GetAllArticles(c echo.Context) error
 }
 
-func NewArticleHandler(repo repository.ArticleRepository) *ArticleHandler {
-	return &ArticleHandler{
-		ArticleRepo: repo,
-	}
+type articleHandler struct {
+    services.ArticleService
 }
 
-func (h *ArticleHandler) HandleArticles(e *echo.Echo) {
-	e.GET("/articles/:id", h.GetArticleByID)
-	e.POST("/articles", h.CreateArticle)
-	e.PUT("/articles/:id", h.UpdateArticle)
-	e.DELETE("/articles/:id", h.DeleteArticle)
-	e.GET("/articles", h.GetAllArticles)
-}
 
-func (h *ArticleHandler) GetArticleByID(c echo.Context) error {
+func (h *articleHandler) GetArticleByID(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
@@ -51,14 +46,14 @@ func (h *ArticleHandler) GetArticleByID(c echo.Context) error {
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
-	article, err := h.ArticleRepo.GetArticleByID(uint(id), userID)
+	article, err := h.ArticleService.GetArticleByID(uint(id), userID)
 	if err != nil {
 		return respondWithError(c, http.StatusNotFound, ErrArticleNotFound)
 	}
 	return c.JSON(http.StatusOK, article)
 }
 
-func (h *ArticleHandler) CreateArticle(c echo.Context) error {
+func (h *articleHandler) CreateArticle(c echo.Context) error {
 	var article models.Article
 	if err := c.Bind(&article); err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleData)
@@ -66,14 +61,14 @@ func (h *ArticleHandler) CreateArticle(c echo.Context) error {
     if err := validateArticle(&article); err != nil {
         return respondWithError(c, http.StatusBadRequest, err.Error())
     }
-	if err := h.ArticleRepo.CreateArticle(&article); err != nil {
+	if err := h.ArticleService.CreateArticle(&article); err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrFailedCreateArticle)
 	}
 	return c.JSON(http.StatusCreated, article)
 }
 
 
-func (h *ArticleHandler) UpdateArticle(c echo.Context) error {
+func (h *articleHandler) UpdateArticle(c echo.Context) error {
     id, err := strconv.ParseUint(c.Param("id"), 10, 32)
     if err != nil {
         return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
@@ -93,13 +88,13 @@ func (h *ArticleHandler) UpdateArticle(c echo.Context) error {
     if err := validateArticle(&article); err != nil {
         return respondWithError(c, http.StatusBadRequest, err.Error())
     }
-    if err := h.ArticleRepo.UpdateArticle(uint(id), &article); err != nil {
+    if err := h.ArticleService.UpdateArticle(uint(id), &article); err != nil {
         return respondWithError(c, http.StatusInternalServerError, ErrFailedUpdateArticle)
     }
     return c.JSON(http.StatusOK, article)
 }
 
-func (h *ArticleHandler) DeleteArticle(c echo.Context) error {
+func (h *articleHandler) DeleteArticle(c echo.Context) error {
     id, err := strconv.ParseUint(c.Param("id"), 10, 32)
     if err != nil {
         return respondWithError(c, http.StatusBadRequest, ErrInvalidID)
@@ -108,20 +103,20 @@ func (h *ArticleHandler) DeleteArticle(c echo.Context) error {
     if err != nil {
         return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
     }
-    if err := h.ArticleRepo.DeleteArticle(uint(id), userID); err != nil {
+    if err := h.ArticleService.DeleteArticle(uint(id), userID); err != nil {
         return respondWithError(c, http.StatusInternalServerError, ErrFailedDeleteArticle)
     }
     return c.NoContent(http.StatusNoContent)
 }
 
 
-func (h *ArticleHandler) GetAllArticles(c echo.Context) error {
+func (h *articleHandler) GetAllArticles(c echo.Context) error {
     searchQuery := c.QueryParam("search")
     userID, err := getUserIDByContext(c)
     if err != nil {
         return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
     }
-    articles, err := h.ArticleRepo.GetAllArticles(searchQuery, userID)
+    articles, err := h.ArticleService.GetAllArticles(searchQuery, userID)
     if err != nil {
         return respondWithError(c, http.StatusInternalServerError, ErrFailedRetrieveArticles)
     }

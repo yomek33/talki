@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
-	"github.com/yomek33/talki/internal/models"
-	"github.com/yomek33/talki/internal/repository"
+	"github.com/yomek33/talki/models"
+	"github.com/yomek33/talki/services"
 )
 
 const (
@@ -21,24 +21,20 @@ const (
 	ErrCouldNotUpdateUser = "could not update user"
 	ErrCouldNotDeleteUser = "could not delete user"
 )
-type UserHandler struct {
-	UserRepo repository.UserRepository
+
+type UserHandler interface {
+	CreateUser(c echo.Context) error
+	GetUserByID(c echo.Context) error
+	UpdateUser(c echo.Context) error
+	DeleteUser(c echo.Context) error
 }
 
-func NewUserHandler(repo repository.UserRepository) *UserHandler {
-	return &UserHandler{
-		UserRepo: repo,
-	}
+type userHandler struct {
+	services.UserService
 }
 
-func (h *UserHandler) HandleUsers(e *echo.Echo) {
-	e.POST("/users", h.CreateUser)
-	e.GET("/users", h.GetUserByID)
-	e.PUT("/users", h.UpdateUser)
-	e.DELETE("/users", h.DeleteUser)
-}
 
-func (h *UserHandler) CreateUser(c echo.Context) error {
+func (h *userHandler) CreateUser(c echo.Context) error {
 	var user models.User
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
@@ -47,25 +43,25 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 
-	if err := h.UserRepo.CreateUser(&user); err != nil {
+	if err := h.UserService.CreateUser(&user); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotCreateUser})
 	}
 	return c.JSON(http.StatusCreated, user)
 }
 
-func (h *UserHandler) GetUserByID(c echo.Context) error {
+func (h *userHandler) GetUserByID(c echo.Context) error {
 	userID,err  := getUserIDByContext(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
 	}
-	user, err := h.UserRepo.GetUserByID(userID)
+	user, err := h.UserService.GetUserByID(userID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": ErrUserNotFound})
 	}
 	return c.JSON(http.StatusOK, user)
 }
 
-func (h *UserHandler) UpdateUser(c echo.Context) error {
+func (h *userHandler) UpdateUser(c echo.Context) error {
 	userID,err  := getUserIDByContext(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
@@ -80,19 +76,19 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	if user.ID != userID {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserID})
 	}
-	if err := h.UserRepo.UpdateUser(&user); err != nil {
+	if err := h.UserService.UpdateUser(&user); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotUpdateUser})
 	}
 	return c.JSON(http.StatusOK, user)
 }
 
-func (h *UserHandler) DeleteUser(c echo.Context) error {
+func (h *userHandler) DeleteUser(c echo.Context) error {
 	userID,err  := getUserIDByContext(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
 	}
 
-	if err = h.UserRepo.DeleteUser(userID); err != nil {
+	if err = h.UserService.DeleteUser(userID); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotDeleteUser})
 	}
 	return c.NoContent(http.StatusNoContent)
