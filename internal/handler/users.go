@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/validator"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/models"
 	"github.com/yomek33/talki/services"
@@ -39,6 +41,9 @@ func (h *userHandler) CreateUser(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
 	}
+
+	user.UserID = uuid.New().String()
+
 	if err := validateUser(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
@@ -95,19 +100,31 @@ func (h *userHandler) DeleteUser(c echo.Context) error {
 }
 
 func getUserIDByContext(c echo.Context) (uint, error) {
-	id, ok := c.Get("user").(uint)
-	if !ok {
-		return 0, errors.New(ErrInvalidUserID)
-	}
-	return id, nil
+    // ユーザーIDが uint 型の場合
+    if id, ok := c.Get("user").(uint); ok {
+        return id, nil
+    }
+
+    // ユーザーIDが string 型の場合
+    if userIDStr, ok := c.Get("user").(string); ok {
+        userID, err := strconv.ParseUint(userIDStr, 10, 32)
+        if err != nil {
+            return 0, errors.New("invalid user ID format")
+        }
+        return uint(userID), nil
+    }
+
+    return 0, errors.New("user ID not found or invalid type")
 }
+
+
 
 func validateUser(user *models.User) error {
 	validate := validator.New()
 	errorMessages := make([]string, 0)
 	if err := validate.Struct(user); err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
-			errorMessage := fmt.Sprintf("Error: %s", strings.ToLower(err.Field()))
+			errorMessage := fmt.Sprintf("Error in field '%s': %s", strings.ToLower(err.Field()), err.Tag())
 			errorMessages = append(errorMessages, errorMessage)
 		}
 		if len(errorMessages) > 0 {

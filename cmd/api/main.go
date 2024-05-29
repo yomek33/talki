@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -25,7 +26,16 @@ func main() {
 	var app application
 	var err error
 
-	dsn := "root:password@tcp(mysql:3306)/todo?charset=utf8mb4&parseTime=True&loc=Local"
+    tidbUser := os.Getenv("TIDB_USER")
+    tidbPassword := os.Getenv("TIDB_PASSWORD")
+    tidbHost := os.Getenv("TIDB_HOST")
+    tidbPort := os.Getenv("TIDB_PORT")
+    tidbDBName := os.Getenv("TIDB_DB_NAME")
+    useSSL := os.Getenv("USE_SSL")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&tls=%s&parseTime=True&loc=Local", tidbUser, tidbPassword, tidbHost, tidbPort, tidbDBName, useSSL)
+
+
 	// GORM DB接続
 	app.DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {

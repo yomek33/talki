@@ -8,7 +8,7 @@ import (
 
 type User struct {
 	gorm.Model
-	UserID   string `gorm:"type:varchar(255);primaryKey" json:"user_id" validate:"required"`
+	UserID   string `gorm:"type:varchar(255); primaryKey" json:"user_id" validate:"required"`
 	Email    string `gorm:"type:varchar(255)" json:"email" validate:"required,email"`
 	Name     string `gorm:"type:varchar(255)" json:"name" validate:"required"`
 	Password string `gorm:"type:varchar(255)" json:"password" validate:"required"`
