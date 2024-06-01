@@ -3,7 +3,7 @@ package handler
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/yomek33/talki/services"
+	"github.com/yomek33/talki/internal/services"
 )
 
 type Handlers struct {

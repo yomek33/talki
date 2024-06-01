@@ -3,7 +3,7 @@ package stores
 import (
 	"errors"
 
-	"github.com/yomek33/talki/models"
+	"github.com/yomek33/talki/internal/models"
 	"gorm.io/gorm"
 )
 

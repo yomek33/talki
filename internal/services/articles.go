@@ -3,8 +3,8 @@ package services
 import (
 	"errors"
 
-	"github.com/yomek33/talki/models"
-	"github.com/yomek33/talki/stores"
+	"github.com/yomek33/talki/internal/models"
+	"github.com/yomek33/talki/internal/stores"
 )
 
 type ArticleService interface {

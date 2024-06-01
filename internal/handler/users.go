@@ -10,8 +10,8 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/yomek33/talki/models"
-	"github.com/yomek33/talki/services"
+	"github.com/yomek33/talki/internal/models"
+	"github.com/yomek33/talki/internal/services"
 )
 
 const (
