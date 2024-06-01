@@ -3,16 +3,18 @@ package services
 import (
 	"errors"
 
+	"github.com/google/uuid"
+
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/stores"
 )
 
 type UserService interface {
 	CreateUser(user *models.User) error
-	GetUserByID(id uint) (*models.User, error)
+	GetUserByID(id uuid.UUID) (*models.User, error)
 	GetUserByEmail(email string) (*models.User, error)
 	UpdateUser(user *models.User) error
-	DeleteUser(id uint) error
+	DeleteUser(userId uuid.UUID) error
 }
 
 type userService struct {
@@ -28,8 +30,8 @@ func (s *userService) CreateUser(user *models.User) error {
 }
 
 
-func (s *userService) GetUserByID(id uint) (*models.User, error) {
-	return s.store.GetUserByID(id)
+func (s *userService) GetUserByID(userId uuid.UUID) (*models.User, error) {
+	return s.store.GetUserByID(userId)
 }
 
 func (s *userService) GetUserByEmail(email string) (*models.User, error) {
@@ -45,7 +47,7 @@ func (s *userService) UpdateUser(user *models.User) error {
 }
 
 
-func (s *userService) DeleteUser(id uint) error {
+func (s *userService) DeleteUser(userId uuid.UUID) error {
 
-	return s.store.DeleteUser(id)
+	return s.store.DeleteUser(userId)
 }

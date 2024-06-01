@@ -3,6 +3,8 @@ package stores
 import (
 	"errors"
 
+	"github.com/google/uuid"
+
 	"github.com/yomek33/talki/internal/models"
 	"gorm.io/gorm"
 )
@@ -14,10 +16,10 @@ const (
 
 type UserStore interface {
 	CreateUser(user *models.User) error
-	GetUserByID(id uint) (*models.User, error)
+	GetUserByID(userId uuid.UUID) (*models.User, error)
 	GetUserByEmail(email string) (*models.User, error)
 	UpdateUser(user *models.User) error
-	DeleteUser(id uint) error
+	DeleteUser(userId uuid.UUID) error
 }
 
 type userStore struct {
@@ -35,7 +37,7 @@ func (store *userStore) CreateUser(user *models.User) error {
 	})
 }
 
-func (store *userStore) GetUserByID(userID uint) (*models.User, error) {
+func (store *userStore) GetUserByID(userID uuid.UUID) (*models.User, error) {
 	var user models.User
 	err := store.DB.Where("user_id = ?", userID).Preload("Articles").First(&user).Error
 	if err != nil {
@@ -69,7 +71,7 @@ func (store *userStore) UpdateUser(user *models.User) error {
 	})
 }
 
-func (store *userStore) DeleteUser(userID uint) error {
+func (store *userStore) DeleteUser(userID uuid.UUID) error {
 	return store.PerformDBTransaction(func(tx *gorm.DB) error {
 		// Soft delete
 		return tx.Model(&models.User{}).Where("user_id = ?", userID).Update("deleted", true).Error

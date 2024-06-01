@@ -2,28 +2,55 @@ package services
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/yomek33/talki/internal/gemini"
+	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/stores"
 )
 
-// Services struct to hold different services
 type Services struct {
-	UserService    UserService
-	ArticleService ArticleService
+	UserService    *userService
+	ArticleService *articleService
+	PhraseService  *phraseService
 	GeminiClient   *gemini.Client
 }
 
-// NewServices initializes new services with the given stores and Gemini client
 func NewServices(s *stores.Stores, geminiClient *gemini.Client) *Services {
 	return &Services{
 		UserService:    &userService{store: s.UserStore},
 		ArticleService: &articleService{store: s.ArticleStore},
+		PhraseService:  &phraseService{store: s.PhraseStore},
 		GeminiClient:   geminiClient,
 	}
 }
 
-// Example function using Gemini client
-func (s *Services) GeneratePhrases(ctx context.Context, topic string) ([]string, error) {
-	return s.GeminiClient.GeneratePhrases(ctx, topic)
+func (s *Services) GenerateAndStorePhrases(ctx context.Context, articleID uint, userID uuid.UUID) error {
+	article, err := s.ArticleService.GetArticleByID(articleID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch article: %w", err)
+	}
+
+	phrases, err := s.GeminiClient.GeneratePhrases(ctx, article.Content)
+	if err != nil {
+		return fmt.Errorf("failed to generate phrases: %w", err)
+	}
+
+	for _, phrase := range phrases {
+		newPhrase := &models.Phrase{
+			ArticleID: article.ID,
+			Text:      phrase,
+			Importance: determineImportance(phrase),
+		}
+		if err := s.PhraseService.StorePhrase(newPhrase); err != nil {
+			return fmt.Errorf("failed to store phrase: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func determineImportance(phrase string) string {
+	return "high"
 }

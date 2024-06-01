@@ -4,10 +4,12 @@ import (
 	"gorm.io/gorm"
 )
 
+
 type Stores struct {
 	DB           *gorm.DB
 	UserStore    UserStore
 	ArticleStore ArticleStore
+	PhraseStore  PhraseStore
 }
 
 func NewStores(db *gorm.DB) *Stores {

@@ -1,10 +1,12 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type Phrase struct {
 	gorm.Model
-	ID         uint `gorm:"primaryKey"`
+	ID         int `gorm:"primaryKey"`
 	ArticleID  uint `gorm:"index"`
 	Text       string
 	Importance string

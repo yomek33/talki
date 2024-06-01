@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/go-playground/validator"
@@ -37,32 +36,32 @@ type userHandler struct {
 
 
 func (h *userHandler) CreateUser(c echo.Context) error {
-	var user models.User
-	if err := c.Bind(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
-	}
+    var user models.User
+    if err := c.Bind(&user); err != nil {
+        return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
+    }
 
-	user.UserID = uuid.New().String()
+    user.UserID = uuid.New() // UUIDを生成
+    if err := validateUser(&user); err != nil {
+        return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+    }
 
-	if err := validateUser(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
-	}
-
-	if err := h.UserService.CreateUser(&user); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotCreateUser})
-	}
-	return c.JSON(http.StatusCreated, user)
+    if err := h.UserService.CreateUser(&user); err != nil {
+        return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotCreateUser})
+    }
+    return c.JSON(http.StatusCreated, user)
 }
 
 func (h *userHandler) GetUserByID(c echo.Context) error {
-	userID,err  := getUserIDByContext(c)
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
-	}
-	user, err := h.UserService.GetUserByID(userID)
-	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": ErrUserNotFound})
-	}
+    userID,err  := getUserIDByContext(c)
+    
+    if err != nil {
+        return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
+    }
+    user, err := h.UserService.GetUserByID(userID)
+    if err != nil {
+        return c.JSON(http.StatusNotFound, echo.Map{"error": ErrUserNotFound})
+    }
 	return c.JSON(http.StatusOK, user)
 }
 
@@ -78,7 +77,7 @@ func (h *userHandler) UpdateUser(c echo.Context) error {
 	if err := validateUser(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
-	if user.ID != userID {
+	if user.UserID != userID {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserID})
 	}
 	if err := h.UserService.UpdateUser(&user); err != nil {
@@ -99,22 +98,17 @@ func (h *userHandler) DeleteUser(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-func getUserIDByContext(c echo.Context) (uint, error) {
-    // ユーザーIDが uint 型の場合
-    if id, ok := c.Get("user").(uint); ok {
-        return id, nil
-    }
-
+func getUserIDByContext(c echo.Context) (uuid.UUID, error) {
     // ユーザーIDが string 型の場合
     if userIDStr, ok := c.Get("user").(string); ok {
-        userID, err := strconv.ParseUint(userIDStr, 10, 32)
+        userID, err := uuid.Parse(userIDStr)
         if err != nil {
-            return 0, errors.New("invalid user ID format")
+            return uuid.Nil, errors.New("invalid user ID format")
         }
-        return uint(userID), nil
+        return userID, nil
     }
 
-    return 0, errors.New("user ID not found or invalid type")
+    return uuid.Nil, errors.New("user ID not found or invalid type")
 }
 
 
