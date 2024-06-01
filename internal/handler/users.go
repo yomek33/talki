@@ -99,12 +99,7 @@ func (h *userHandler) DeleteUser(c echo.Context) error {
 }
 
 func getUserIDByContext(c echo.Context) (uuid.UUID, error) {
-    // ユーザーIDが string 型の場合
-    if userIDStr, ok := c.Get("user").(string); ok {
-        userID, err := uuid.Parse(userIDStr)
-        if err != nil {
-            return uuid.Nil, errors.New("invalid user ID format")
-        }
+    if userID, ok := c.Get("user").(uuid.UUID); ok {
         return userID, nil
     }
 
