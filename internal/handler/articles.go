@@ -58,9 +58,16 @@ func (h *articleHandler) CreateArticle(c echo.Context) error {
 	if err := c.Bind(&article); err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleData)
 	}
-    if err := validateArticle(&article); err != nil {
-        return respondWithError(c, http.StatusBadRequest, err.Error())
-    }
+	if err := validateArticle(&article); err != nil {
+		return respondWithError(c, http.StatusBadRequest, err.Error())
+	}
+	// Set the UserID from context
+	userID, err := getUserIDByContext(c)
+	if err != nil {
+		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
+	}
+	article.UserID = userID
+
 	if err := h.ArticleService.CreateArticle(&article); err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrFailedCreateArticle)
 	}
@@ -69,29 +76,29 @@ func (h *articleHandler) CreateArticle(c echo.Context) error {
 
 
 func (h *articleHandler) UpdateArticle(c echo.Context) error {
-    id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-    if err != nil {
-        return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
-    }
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
+	}
 
-    userID, err := getUserIDByContext(c)
-    if err != nil {
-        return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
-    }
-    var article models.Article
-    if err := c.Bind(&article); err != nil {
-        return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleData)
-    }
-    if article.UserID != userID {
-        return respondWithError(c, http.StatusForbidden, ErrForbiddenModify)
-    }
-    if err := validateArticle(&article); err != nil {
-        return respondWithError(c, http.StatusBadRequest, err.Error())
-    }
-    if err := h.ArticleService.UpdateArticle(uint(id), &article); err != nil {
-        return respondWithError(c, http.StatusInternalServerError, ErrFailedUpdateArticle)
-    }
-    return c.JSON(http.StatusOK, article)
+	userID, err := getUserIDByContext(c)
+	if err != nil {
+		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
+	}
+	var article models.Article
+	if err := c.Bind(&article); err != nil {
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleData)
+	}
+	if article.UserID != userID {
+		return respondWithError(c, http.StatusForbidden, ErrForbiddenModify)
+	}
+	if err := validateArticle(&article); err != nil {
+		return respondWithError(c, http.StatusBadRequest, err.Error())
+	}
+	if err := h.ArticleService.UpdateArticle(uint(id), &article); err != nil {
+		return respondWithError(c, http.StatusInternalServerError, ErrFailedUpdateArticle)
+	}
+	return c.JSON(http.StatusOK, article)
 }
 
 func (h *articleHandler) DeleteArticle(c echo.Context) error {

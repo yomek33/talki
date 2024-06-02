@@ -9,7 +9,7 @@ import (
 
 type User struct {
 	gorm.Model
-	UserID   uuid.UUID `gorm:"type:varchar(255); primaryKey" json:"user_id" validate:"required"`
+	UserID   uuid.UUID `gorm:"type:varchar(255); primaryKey" json:"user_id" `
 	Email    string `gorm:"type:varchar(255)" json:"email" validate:"required,email"`
 	Name     string `gorm:"type:varchar(255)" json:"name" validate:"required"`
 	Password string `gorm:"type:varchar(255)" json:"password" validate:"required"`
@@ -25,7 +25,6 @@ type Dialogue struct {
 	InputText    string `validate:"required"`
 	ResponseText string `validate:"required"`
 	CreatedAt    time.Time `validate:"required"`
-	User         User `validate:"required"`
 }
 
 type Progress struct {
@@ -35,6 +34,5 @@ type Progress struct {
 	PhraseID     uuid.UUID `gorm:"index" validate:"required"`
 	Status       string `validate:"required"`
 	LastReviewed time.Time `validate:"required"`
-	User         User `validate:"required"`
 	Phrase       Phrase
 }
