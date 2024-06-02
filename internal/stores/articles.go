@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ErrArticleCannotBeNil = "article cannot be nil"
+	ErrArticleCannotBeNil  = "article cannot be nil"
 	ErrMismatchedArticleID = "article ID does not match the provided ID"
 )
 

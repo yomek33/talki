@@ -26,7 +26,6 @@ type userStore struct {
 	BaseStore
 }
 
-
 func (store *userStore) CreateUser(user *models.User) error {
 	if user == nil {
 		return errors.New("create user: " + ErrUserCannotBeNil)
@@ -48,8 +47,6 @@ func (store *userStore) GetUserByID(userID uuid.UUID) (*models.User, error) {
 	}
 	return &user, nil
 }
-
-
 
 func (store *userStore) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User

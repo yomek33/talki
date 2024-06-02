@@ -35,7 +35,7 @@ func (c *Client) GenerateJsonContent(ctx context.Context, prompt string) ([]stri
 }
 
 // GeneratePhrases generates phrases based on the given topic
-func (c *Client)GeneratePhrases(ctx context.Context, topic string) ([]string, error) {
+func (c *Client) GeneratePhrases(ctx context.Context, topic string) ([]string, error) {
 	prompt := generatePrompt(topic)
 	output, err := c.GenerateJsonContent(ctx, prompt)
 	if err != nil {

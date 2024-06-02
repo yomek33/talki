@@ -4,7 +4,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 type Stores struct {
 	DB           *gorm.DB
 	UserStore    UserStore

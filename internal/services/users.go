@@ -23,20 +23,18 @@ type userService struct {
 	store stores.UserStore
 }
 
-
 func (s *userService) CreateUser(user *models.User) error {
 	hashedPassword, err := PasswordEncrypt(user.Password)
 	if err != nil {
 		return err
 	}
-	user.Password= hashedPassword
+	user.Password = hashedPassword
 	err = s.store.CreateUser(user)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
 
 func (s *userService) GetUserByID(userId uuid.UUID) (*models.User, error) {
 	return s.store.GetUserByID(userId)
@@ -54,7 +52,6 @@ func (s *userService) UpdateUser(user *models.User) error {
 	return s.store.UpdateUser(user)
 }
 
-
 func (s *userService) DeleteUser(userId uuid.UUID) error {
 
 	return s.store.DeleteUser(userId)
@@ -66,7 +63,6 @@ func (s *userService) CheckHashPassword(user *models.User, password string) bool
 }
 
 func PasswordEncrypt(password string) (string, error) {
-    hashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-    return string(hashPassword), err
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(hashPassword), err
 }
-

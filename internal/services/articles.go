@@ -23,7 +23,7 @@ type articleService struct {
 }
 
 var (
-	ErrArticleNil        = errors.New("article cannot be nil")
+	ErrArticleNil          = errors.New("article cannot be nil")
 	ErrMismatchedArticleID = errors.New("mismatched article ID")
 )
 
@@ -51,7 +51,6 @@ func (s *articleService) UpdateArticle(id uint, article *models.Article) error {
 	}
 	return s.store.UpdateArticle(id, article)
 }
-
 
 func (s *articleService) DeleteArticle(id uint, userID uuid.UUID) error {
 	return s.store.DeleteArticle(id, userID)

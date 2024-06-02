@@ -39,8 +39,8 @@ func (s *Services) GenerateAndStorePhrases(ctx context.Context, articleID uint, 
 
 	for _, phrase := range phrases {
 		newPhrase := &models.Phrase{
-			ArticleID: article.ID,
-			Text:      phrase,
+			ArticleID:  article.ID,
+			Text:       phrase,
 			Importance: determineImportance(phrase),
 		}
 		if err := s.PhraseService.StorePhrase(newPhrase); err != nil {

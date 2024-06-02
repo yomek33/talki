@@ -13,7 +13,6 @@ type phraseService struct {
 	store stores.PhraseStore
 }
 
-
 func (s *phraseService) StorePhrase(phrase *models.Phrase) error {
 	return s.store.CreatePhrase(phrase)
 }

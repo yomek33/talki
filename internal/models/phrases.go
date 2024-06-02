@@ -6,7 +6,7 @@ import (
 
 type Phrase struct {
 	gorm.Model
-	ID         int `gorm:"primaryKey"`
+	ID         int  `gorm:"primaryKey"`
 	ArticleID  uint `gorm:"index"`
 	Text       string
 	Importance string
