@@ -134,10 +134,6 @@ func (h *articleHandler) GetAllArticles(c echo.Context) error {
 	return c.JSON(http.StatusOK, articles)
 }
 
-func respondWithError(c echo.Context, code int, message string) error {
-	return c.JSON(code, map[string]string{"error": message})
-}
-
 func validateArticle(article *models.Article) error {
 	validate := validator.New()
 	if err := validate.Struct(article); err != nil {

@@ -57,29 +57,28 @@ func (h *userHandler) generateJWTToken(userID uuid.UUID) (string, error) {
 func (h *userHandler) CreateUser(c echo.Context) error {
 	var user models.User
 	if err := c.Bind(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidUserData)
 	}
 
 	user.UserID = uuid.New()
 	if err := validateUser(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+		return respondWithError(c, http.StatusBadRequest, err.Error())
 	}
 
 	if err := h.UserService.CreateUser(&user); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotCreateUser})
+		return respondWithError(c, http.StatusInternalServerError, ErrCouldNotCreateUser)
 	}
 	return c.JSON(http.StatusCreated, user)
 }
-
 func (h *userHandler) GetUserByID(c echo.Context) error {
 	userID, err := getUserIDByContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
+		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
 
 	user, err := h.UserService.GetUserByID(userID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": ErrUserNotFound})
+		return respondWithError(c, http.StatusNotFound, ErrUserNotFound)
 	}
 	return c.JSON(http.StatusOK, user)
 }
@@ -92,16 +91,16 @@ func (h *userHandler) UpdateUser(c echo.Context) error {
 
 	var user models.User
 	if err := c.Bind(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidUserData)
 	}
 	if err := validateUser(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+		return respondWithError(c, http.StatusBadRequest, err.Error())
 	}
 	if user.UserID != userID {
-		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserID})
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidUserID)
 	}
 	if err := h.UserService.UpdateUser(&user); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotUpdateUser})
+		return respondWithError(c, http.StatusInternalServerError, ErrCouldNotUpdateUser)
 	}
 	return c.JSON(http.StatusOK, user)
 }
@@ -109,11 +108,11 @@ func (h *userHandler) UpdateUser(c echo.Context) error {
 func (h *userHandler) DeleteUser(c echo.Context) error {
 	userID, err := getUserIDByContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
+		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
 
 	if err = h.UserService.DeleteUser(userID); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotDeleteUser})
+		return respondWithError(c, http.StatusInternalServerError, ErrCouldNotDeleteUser)
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -125,17 +124,17 @@ func (h *userHandler) Login(c echo.Context) error {
 	}
 
 	if err := c.Bind(&loginRequest); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidUserData)
 	}
 
 	user, err := h.UserService.GetUserByEmail(loginRequest.Email)
 	if err != nil || !h.UserService.CheckHashPassword(user, loginRequest.Password) {
-		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidCredentials})
+		return respondWithError(c, http.StatusUnauthorized, ErrInvalidCredentials)
 	}
 
 	token, err := h.generateJWTToken(user.UserID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "could not generate token"})
+		return respondWithError(c, http.StatusInternalServerError, ErrCouldNotCreateUser)
 	}
 
 	// Set JWT token in HTTP-only cookie

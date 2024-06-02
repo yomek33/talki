@@ -9,6 +9,7 @@ import (
 type Handlers struct {
 	UserHandler
 	ArticleHandler
+	PhraseHandler
 	jwtSecretKey string
 }
 
@@ -16,6 +17,7 @@ func NewHandler(s *services.Services, jwtSecretKey string) *Handlers {
 	return &Handlers{
 		UserHandler:    &userHandler{UserService: s.UserService, jwtSecretKey: jwtSecretKey},
 		ArticleHandler: &articleHandler{ArticleService: s.ArticleService},
+		PhraseHandler:  &phraseHandler{PhraseService: s.PhraseService},
 		jwtSecretKey:   jwtSecretKey,
 	}
 }
@@ -61,3 +63,6 @@ func Echo() *echo.Echo {
 	return e
 }
 
+func respondWithError(c echo.Context, code int, message string) error {
+	return c.JSON(code, map[string]string{"error": message})
+}
