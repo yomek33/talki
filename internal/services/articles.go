@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 
@@ -21,6 +22,11 @@ type articleService struct {
 	store stores.ArticleStore
 }
 
+var (
+	ErrArticleNil        = errors.New("article cannot be nil")
+	ErrMismatchedArticleID = errors.New("mismatched article ID")
+)
+
 func (s *articleService) CreateArticle(article *models.Article) error {
 	if article == nil {
 		return errors.New("article cannot be nil")
@@ -29,18 +35,23 @@ func (s *articleService) CreateArticle(article *models.Article) error {
 }
 
 func (s *articleService) GetArticleByID(id uint, userID uuid.UUID) (*models.Article, error) {
-	return s.store.GetArticleByID(id, userID)
+	article, err := s.store.GetArticleByID(id, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get article by ID: %w", err)
+	}
+	return article, nil
 }
 
 func (s *articleService) UpdateArticle(id uint, article *models.Article) error {
 	if article == nil {
-		return errors.New("article cannot be nil")
+		return ErrArticleNil
 	}
 	if id != article.ID {
-		return errors.New("mismatched article ID")
+		return ErrMismatchedArticleID
 	}
 	return s.store.UpdateArticle(id, article)
 }
+
 
 func (s *articleService) DeleteArticle(id uint, userID uuid.UUID) error {
 	return s.store.DeleteArticle(id, userID)
