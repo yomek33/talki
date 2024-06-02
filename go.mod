@@ -4,10 +4,13 @@ go 1.22.2
 
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/generative-ai-go v0.13.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
+	github.com/labstack/echo-jwt/v4 v4.2.0
 	github.com/labstack/echo/v4 v4.12.0
+	golang.org/x/crypto v0.23.0
 	google.golang.org/api v0.182.0
 	gorm.io/driver/mysql v1.5.6
 	gorm.io/gorm v1.25.9
@@ -47,7 +50,6 @@ require (
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/metric v1.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.26.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect

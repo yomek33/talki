@@ -17,6 +17,7 @@ type Config struct {
 	UseSSL       string
 	Port         string
 	GeminiAPIKey string
+	JWTSecretKey string
 }
 
 // LoadConfig loads configuration from environment variables
@@ -34,9 +35,10 @@ func LoadConfig() (*Config, error) {
 		UseSSL:       os.Getenv("USE_SSL"),
 		Port:         os.Getenv("PORT"),
 		GeminiAPIKey: os.Getenv("GEMINI_API_KEY"),
+		JWTSecretKey: os.Getenv("JWT_SECRET_KEY"),
 	}
 
-	if cfg.TiDBUser == "" || cfg.TiDBPassword == "" || cfg.TiDBHost == "" || cfg.TiDBPort == "" || cfg.TiDBDBName == "" || cfg.Port == "" || cfg.UseSSL == "" || cfg.GeminiAPIKey == ""{
+	if cfg.TiDBUser == "" || cfg.TiDBPassword == "" || cfg.TiDBHost == "" || cfg.TiDBPort == "" || cfg.TiDBDBName == "" || cfg.Port == "" || cfg.UseSSL == "" || cfg.GeminiAPIKey == "" || cfg.JWTSecretKey == "" {
 		return nil, fmt.Errorf("one or more required environment variables are missing")
 	}
 

@@ -63,7 +63,7 @@ func main() {
 	// Initialize stores, services, and handlers
 	stores := stores.NewStores(app.DB)
 	services := services.NewServices(stores, app.GeminiClient)
-	h := handler.NewHandler(services)
+	h := handler.NewHandler(services, cfg.JWTSecretKey)
 
 	// Set up routes
 	h.SetDefault(e)

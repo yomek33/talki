@@ -9,12 +9,14 @@ import (
 type Handlers struct {
 	UserHandler
 	ArticleHandler
+	jwtSecretKey string
 }
 
-func NewHandler(s *services.Services) *Handlers {
+func NewHandler(s *services.Services, jwtSecretKey string) *Handlers {
 	return &Handlers{
-		UserHandler:    &userHandler{UserService: s.UserService},
+		UserHandler:    &userHandler{UserService: s.UserService, jwtSecretKey: jwtSecretKey},
 		ArticleHandler: &articleHandler{ArticleService: s.ArticleService},
+		jwtSecretKey:   jwtSecretKey,
 	}
 }
 
@@ -26,20 +28,24 @@ func (h *Handlers) SetDefault(e *echo.Echo) {
 
 func (h *Handlers) SetAPIRoutes(e *echo.Echo) {
 	api := e.Group("/api")
-	//middleware
-	//api.Use(middleware.JWTMiddleware())
 
-	api.POST("/articles", h.CreateArticle)
-	api.GET("/articles", h.GetAllArticles)
-	api.GET("/articles/:id", h.GetArticleByID)
-	api.PUT("/articles/:id", h.UpdateArticle)
-	api.DELETE("/articles/:id", h.DeleteArticle)
-
+	// Public routes
+	api.POST("/login", h.Login)
 	api.POST("/users", h.CreateUser)
-	api.GET("/users/:id", h.GetUserByID)
-	api.PUT("/users/:id", h.UpdateUser)
-	api.DELETE("/users/:id", h.DeleteUser)
 
+	// Protected routes
+	r := api.Group("")
+	r.Use(JWTMiddleware(h.jwtSecretKey))
+
+	r.POST("/articles", h.CreateArticle)
+	r.GET("/articles", h.GetAllArticles)
+	r.GET("/articles/:id", h.GetArticleByID)
+	r.PUT("/articles/:id", h.UpdateArticle)
+	r.DELETE("/articles/:id", h.DeleteArticle)
+
+	r.GET("/users/:id", h.GetUserByID)
+	r.PUT("/users/:id", h.UpdateUser)
+	r.DELETE("/users/:id", h.DeleteUser)
 }
 
 func Echo() *echo.Echo {
@@ -50,6 +56,8 @@ func Echo() *echo.Echo {
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
+		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
 	}))
 	return e
 }
+

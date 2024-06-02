@@ -77,3 +77,4 @@ func (store *userStore) DeleteUser(userID uuid.UUID) error {
 		return tx.Model(&models.User{}).Where("user_id = ?", userID).Update("deleted", true).Error
 	})
 }
+

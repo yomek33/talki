@@ -5,22 +5,27 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/services"
 )
 
 const (
-	ErrInvalidUserData = "invalid user data"
-	ErrCouldNotCreateUser = "could not create user"
-	ErrInvalidUserToken = "invalid user token"
-	ErrUserNotFound = "user not found"
-	ErrInvalidUserID = "invalid user ID"
-	ErrCouldNotUpdateUser = "could not update user"
-	ErrCouldNotDeleteUser = "could not delete user"
+	ErrInvalidUserData     = "invalid user data"
+	ErrCouldNotCreateUser  = "could not create user"
+	ErrInvalidUserToken    = "invalid user token"
+	ErrUserNotFound        = "user not found"
+	ErrInvalidUserID       = "invalid user ID"
+	ErrCouldNotUpdateUser  = "could not update user"
+	ErrCouldNotDeleteUser  = "could not delete user"
+	ErrInvalidCredentials  = "invalid credentials"
+	TokenExpirationMinutes = 60
 )
 
 type UserHandler interface {
@@ -28,48 +33,67 @@ type UserHandler interface {
 	GetUserByID(c echo.Context) error
 	UpdateUser(c echo.Context) error
 	DeleteUser(c echo.Context) error
+	Login(c echo.Context) error
 }
 
 type userHandler struct {
 	services.UserService
+	jwtSecretKey string
 }
 
 
+func NewUserHandler(userService services.UserService, jwtSecretKey string) UserHandler {
+	return &userHandler{UserService: userService, jwtSecretKey: jwtSecretKey}
+}
+// JWT token
+func (h *userHandler) generateJWTToken(userID uuid.UUID) (string, error) {
+	claims := &jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * TokenExpirationMinutes)),
+		Subject:   userID.String(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(h.jwtSecretKey))
+}
+
+// Handlers
+
 func (h *userHandler) CreateUser(c echo.Context) error {
-    var user models.User
-    if err := c.Bind(&user); err != nil {
-        return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
-    }
+	var user models.User
+	if err := c.Bind(&user); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
+	}
 
-    user.UserID = uuid.New() // UUIDを生成
-    if err := validateUser(&user); err != nil {
-        return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
-    }
+	user.UserID = uuid.New()
+	if err := validateUser(&user); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+	}
 
-    if err := h.UserService.CreateUser(&user); err != nil {
-        return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotCreateUser})
-    }
-    return c.JSON(http.StatusCreated, user)
+	if err := h.UserService.CreateUser(&user); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": ErrCouldNotCreateUser})
+	}
+	return c.JSON(http.StatusCreated, user)
 }
 
 func (h *userHandler) GetUserByID(c echo.Context) error {
-    userID,err  := getUserIDByContext(c)
-    
-    if err != nil {
-        return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
-    }
-    user, err := h.UserService.GetUserByID(userID)
-    if err != nil {
-        return c.JSON(http.StatusNotFound, echo.Map{"error": ErrUserNotFound})
-    }
+	userID, err := getUserIDByContext(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
+	}
+
+	user, err := h.UserService.GetUserByID(userID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{"error": ErrUserNotFound})
+	}
 	return c.JSON(http.StatusOK, user)
 }
 
 func (h *userHandler) UpdateUser(c echo.Context) error {
-	userID,err  := getUserIDByContext(c)
+	userID, err := getUserIDByContext(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
 	}
+
 	var user models.User
 	if err := c.Bind(&user); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
@@ -87,7 +111,7 @@ func (h *userHandler) UpdateUser(c echo.Context) error {
 }
 
 func (h *userHandler) DeleteUser(c echo.Context) error {
-	userID,err  := getUserIDByContext(c)
+	userID, err := getUserIDByContext(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
 	}
@@ -98,15 +122,59 @@ func (h *userHandler) DeleteUser(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
-func getUserIDByContext(c echo.Context) (uuid.UUID, error) {
-    if userID, ok := c.Get("user").(uuid.UUID); ok {
-        return userID, nil
-    }
+func (h *userHandler) Login(c echo.Context) error {
+	var loginRequest struct {
+		Email    string `json:"email" validate:"required,email"`
+		Password string `json:"password" validate:"required"`
+	}
 
-    return uuid.Nil, errors.New("user ID not found or invalid type")
+	if err := c.Bind(&loginRequest); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": ErrInvalidUserData})
+	}
+
+	user, err := h.UserService.GetUserByEmail(loginRequest.Email)
+	if err != nil || !h.UserService.CheckHashPassword(user, loginRequest.Password) {
+		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidCredentials})
+	}
+
+	token, err := h.generateJWTToken(user.UserID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "could not generate token"})
+	}
+
+	// Set JWT token in HTTP-only cookie
+	cookie := new(http.Cookie)
+	cookie.Name = "token"
+	cookie.Value = token
+	cookie.Expires = time.Now().Add(time.Minute * TokenExpirationMinutes)
+	cookie.HttpOnly = true
+	cookie.Secure = false // Change to true in production
+	c.SetCookie(cookie)
+
+	return c.JSON(http.StatusOK, echo.Map{"message": "login successful"})
 }
 
+// Middleware
 
+func JWTMiddleware(JWTSecretKey string) echo.MiddlewareFunc {
+	config := echojwt.Config{
+		SigningKey: []byte(JWTSecretKey),
+		TokenLookup: "cookie:token",
+	}
+	return echojwt.WithConfig(config)
+}
+
+// Helper functions
+
+func getUserIDByContext(c echo.Context) (uuid.UUID, error) {
+	userToken := c.Get("user").(*jwt.Token)
+	claims := userToken.Claims.(jwt.MapClaims)
+	userID, err := uuid.Parse(claims["sub"].(string))
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return userID, nil
+}
 
 func validateUser(user *models.User) error {
 	validate := validator.New()
