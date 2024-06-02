@@ -14,7 +14,6 @@ type User struct {
 	Name     string `gorm:"type:varchar(255)" json:"name" validate:"required"`
 	Password string `gorm:"type:varchar(255)" json:"password" validate:"required"`
 	GoogleID string `gorm:"type:varchar(255)" json:"google_id" `
-	Deleted  bool   `gorm:"default:false"`
 	Articles []Article
 }
 

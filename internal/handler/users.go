@@ -41,10 +41,6 @@ type userHandler struct {
 	jwtSecretKey string
 }
 
-
-func NewUserHandler(userService services.UserService, jwtSecretKey string) UserHandler {
-	return &userHandler{UserService: userService, jwtSecretKey: jwtSecretKey}
-}
 // JWT token
 func (h *userHandler) generateJWTToken(userID uuid.UUID) (string, error) {
 	claims := &jwt.RegisteredClaims{

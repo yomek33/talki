@@ -49,6 +49,8 @@ func (store *userStore) GetUserByID(userID uuid.UUID) (*models.User, error) {
 	return &user, nil
 }
 
+
+
 func (store *userStore) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
 	err := store.DB.Where("email = ?", email).First(&user).Error
@@ -73,8 +75,14 @@ func (store *userStore) UpdateUser(user *models.User) error {
 
 func (store *userStore) DeleteUser(userID uuid.UUID) error {
 	return store.PerformDBTransaction(func(tx *gorm.DB) error {
-		// Soft delete
-		return tx.Model(&models.User{}).Where("user_id = ?", userID).Update("deleted", true).Error
+		// Delete the articles related to the user
+		if err := tx.Where("user_id = ?", userID).Delete(&models.Article{}).Error; err != nil {
+			return err
+		}
+		// Delete the user
+		if err := tx.Where("id = ?", userID).Delete(&models.User{}).Error; err != nil {
+			return err
+		}
+		return nil
 	})
 }
-
