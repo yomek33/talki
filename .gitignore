@@ -1,1 +1,4 @@
 .env
+service-account-credentials.json
+mermaid.md
+nginx/

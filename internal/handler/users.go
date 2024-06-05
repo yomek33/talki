@@ -10,7 +10,6 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/services"
@@ -34,11 +33,13 @@ type UserHandler interface {
 	UpdateUser(c echo.Context) error
 	DeleteUser(c echo.Context) error
 	Login(c echo.Context) error
+	GetGoogleLoginSignin(c echo.Context) error
 }
 
 type userHandler struct {
 	services.UserService
 	jwtSecretKey string
+	Firebase     *Firebase
 }
 
 // JWT token
@@ -53,7 +54,6 @@ func (h *userHandler) generateJWTToken(userID uuid.UUID) (string, error) {
 }
 
 // Handlers
-
 func (h *userHandler) CreateUser(c echo.Context) error {
 	var user models.User
 	if err := c.Bind(&user); err != nil {
@@ -147,16 +147,6 @@ func (h *userHandler) Login(c echo.Context) error {
 	c.SetCookie(cookie)
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "login successful"})
-}
-
-// Middleware
-
-func JWTMiddleware(JWTSecretKey string) echo.MiddlewareFunc {
-	config := echojwt.Config{
-		SigningKey: []byte(JWTSecretKey),
-		TokenLookup: "cookie:token",
-	}
-	return echojwt.WithConfig(config)
 }
 
 // Helper functions

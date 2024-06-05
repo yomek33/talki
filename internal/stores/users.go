@@ -18,6 +18,7 @@ type UserStore interface {
 	CreateUser(user *models.User) error
 	GetUserByID(userId uuid.UUID) (*models.User, error)
 	GetUserByEmail(email string) (*models.User, error)
+	GetUserByGoogleID(googleID string) (*models.User, error)
 	UpdateUser(user *models.User) error
 	DeleteUser(userId uuid.UUID) error
 }
@@ -51,6 +52,17 @@ func (store *userStore) GetUserByID(userID uuid.UUID) (*models.User, error) {
 func (store *userStore) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
 	err := store.DB.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+func (store *userStore) GetUserByGoogleID(googleID string) (*models.User, error) {
+	var user models.User
+	err := store.DB.Where("google_id = ?", googleID).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil

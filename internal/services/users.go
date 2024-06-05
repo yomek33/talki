@@ -14,6 +14,7 @@ type UserService interface {
 	CreateUser(user *models.User) error
 	GetUserByID(id uuid.UUID) (*models.User, error)
 	GetUserByEmail(email string) (*models.User, error)
+	GetUserByGoogleID(googleID string) (*models.User, error)
 	UpdateUser(user *models.User) error
 	DeleteUser(userId uuid.UUID) error
 	CheckHashPassword(user *models.User, password string) bool
@@ -24,15 +25,15 @@ type userService struct {
 }
 
 func (s *userService) CreateUser(user *models.User) error {
-	hashedPassword, err := PasswordEncrypt(user.Password)
-	if err != nil {
-		return err
-	}
-	user.Password = hashedPassword
-	err = s.store.CreateUser(user)
-	if err != nil {
-		return err
-	}
+	// hashedPassword, err := PasswordEncrypt(user.Password)
+	// if err != nil {
+	// 	return err
+	// }
+	// user.Password = hashedPassword
+	// err = s.store.CreateUser(user)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -42,6 +43,10 @@ func (s *userService) GetUserByID(userId uuid.UUID) (*models.User, error) {
 
 func (s *userService) GetUserByEmail(email string) (*models.User, error) {
 	return s.store.GetUserByEmail(email)
+}
+
+func (s *userService) GetUserByGoogleID(googleID string) (*models.User, error) {
+	return s.store.GetUserByGoogleID(googleID)
 }
 
 func (s *userService) UpdateUser(user *models.User) error {
@@ -58,8 +63,8 @@ func (s *userService) DeleteUser(userId uuid.UUID) error {
 }
 
 func (s *userService) CheckHashPassword(user *models.User, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	return err == nil
+	//err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	return true
 }
 
 func PasswordEncrypt(password string) (string, error) {

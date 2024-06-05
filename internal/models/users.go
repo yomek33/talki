@@ -10,9 +10,7 @@ import (
 type User struct {
 	gorm.Model
 	UserID   uuid.UUID `gorm:"type:varchar(255); primaryKey" json:"user_id" `
-	Email    string    `gorm:"type:varchar(255)" json:"email" validate:"required,email"`
 	Name     string    `gorm:"type:varchar(255)" json:"name" validate:"required"`
-	Password string    `gorm:"type:varchar(255)" json:"password" validate:"required"`
 	GoogleID string    `gorm:"type:varchar(255)" json:"google_id" `
 	Articles []Article
 }

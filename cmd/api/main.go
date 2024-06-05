@@ -19,8 +19,9 @@ import (
 )
 
 type application struct {
-	DB          *gorm.DB
+	DB           *gorm.DB
 	GeminiClient *gemini.Client
+	Firebase     *handler.Firebase
 }
 
 func main() {
@@ -52,24 +53,31 @@ func main() {
 		log.Fatalf("Failed to connect DB: %v", err)
 	}
 
-	// Initialize Gemini client
 	geminiClient, err := gemini.NewClient(context.Background(), cfg.GeminiAPIKey)
 	if err != nil {
 		log.Fatalf("Failed to create Gemini client: %v", err)
 	}
 	defer geminiClient.Close()
+
+	firebaseInstance, err := handler.InitFirebase(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to initialize Firebase: %v", err)
+	}
+
 	// Initialize application structure
-	app := &application{DB: db, GeminiClient: geminiClient}
-	// Initialize stores, services, and handlers
+	app := &application{
+		DB:           db,
+		GeminiClient: geminiClient,
+		Firebase:     firebaseInstance,
+	}
+
 	stores := stores.NewStores(app.DB)
 	services := services.NewServices(stores, app.GeminiClient)
-	h := handler.NewHandler(services, cfg.JWTSecretKey)
+	h := handler.NewHandler(services, cfg.JWTSecretKey, app.Firebase)
 
-	// Set up routes
 	h.SetDefault(e)
 	h.SetAPIRoutes(e)
 
-	// Start the server
 	port, err := strconv.Atoi(cfg.Port)
 	if err != nil {
 		log.Fatalf("Invalid port number: %v", err)

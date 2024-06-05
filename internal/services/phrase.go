@@ -15,9 +15,9 @@ type PhraseService interface {
 }
 
 type phraseService struct {
-	store stores.PhraseStore
+	store          stores.PhraseStore
 	ArticleService *articleService
-	GeminiClient *gemini.Client
+	GeminiClient   *gemini.Client
 }
 
 func (s *phraseService) StorePhrase(phrase *models.Phrase) error {

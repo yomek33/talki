@@ -40,7 +40,6 @@ type articleHandler struct {
 	services.ArticleService
 }
 
-
 func (h *articleHandler) GetArticleByID(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -146,4 +145,3 @@ func validateArticle(article *models.Article) error {
 	}
 	return nil
 }
-

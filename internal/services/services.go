@@ -20,4 +20,3 @@ func NewServices(s *stores.Stores, geminiClient *gemini.Client) *Services {
 		GeminiClient:   geminiClient,
 	}
 }
-
