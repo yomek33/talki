@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -19,6 +20,11 @@ type Config struct {
 	GeminiAPIKey string
 	JWTSecretKey string
 }
+
+const (
+	// expires cookie expiration time
+	SessionDuration = time.Hour * 3
+)
 
 // LoadConfig loads configuration from environment variables
 func LoadConfig() (*Config, error) {

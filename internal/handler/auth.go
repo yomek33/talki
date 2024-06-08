@@ -9,6 +9,7 @@ import (
 	"firebase.google.com/go/v4/auth"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/yomek33/talki/internal/config"
 	"github.com/yomek33/talki/internal/models"
 	"google.golang.org/api/option"
 	"gorm.io/gorm"
@@ -17,8 +18,8 @@ import (
 const serviceAccountJsonPath = "./service-account-credentials.json"
 
 type Firebase struct {
-	App  *firebase.App
-	Auth *auth.Client
+	App        *firebase.App
+	AuthClient *auth.Client
 }
 
 type UserSignUpRequest struct {
@@ -39,11 +40,11 @@ func InitFirebase(ctx context.Context) (*Firebase, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error getting Auth client: %v", err)
 	}
-	return &Firebase{App: app, Auth: auth}, nil
+	return &Firebase{App: app, AuthClient: auth}, nil
 }
 
-func (h *userHandler) exchangeCodeForToken(idToken string) (*auth.Token, error) {
-	token, err := h.Firebase.Auth.VerifyIDToken(context.Background(), idToken)
+func (h *userHandler) checkFirebaseIDToken(idToken string) (*auth.Token, error) {
+	token, err := h.Firebase.AuthClient.VerifyIDToken(context.Background(), idToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify ID token: %v", err)
 	}
@@ -58,7 +59,9 @@ func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
 		return respondWithError(c, http.StatusBadRequest, "Invalid request payload")
 	}
 
-	token, err := h.exchangeCodeForToken(req.IDToken)
+	idToken := req.IDToken
+
+	token, err := h.Firebase.AuthClient.VerifyIDToken(c.Request().Context(), idToken)
 	if err != nil {
 		h.logError(err, "failed to verify ID token")
 		return respondWithError(c, http.StatusUnauthorized, "Invalid ID token")
@@ -82,5 +85,21 @@ func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{"jwt_token": req.IDToken})
+	cookieValue, err := h.Firebase.AuthClient.SessionCookie(c.Request().Context(), idToken, config.SessionDuration)
+	if err != nil {
+		h.logError(err, "failed to create session cookie")
+		return respondWithError(c, http.StatusInternalServerError, "Failed to create session cookie")
+	}
+	cookie := &http.Cookie{
+		Name:     "session",
+		Value:    cookieValue,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+	}
+	c.SetCookie(cookie)
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Success",
+	})
 }

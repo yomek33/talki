@@ -80,7 +80,12 @@ func Echo() *echo.Echo {
 	}))
 
 	e.Use(middleware.Secure())
-	e.Use(middleware.CSRF())
+	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup:    "header:X-CSRF-Token",
+		CookieName:     "_csrf",
+		CookiePath:     "/",
+		CookieHTTPOnly: true,
+	}))
 
 	e.HTTPErrorHandler = customHTTPErrorHandler
 
