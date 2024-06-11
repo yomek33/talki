@@ -3,7 +3,6 @@ package services
 import (
 	"errors"
 
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/yomek33/talki/internal/models"
@@ -12,11 +11,9 @@ import (
 
 type UserService interface {
 	CreateUser(user *models.User) error
-	GetUserByID(id uuid.UUID) (*models.User, error)
-	GetUserByEmail(email string) (*models.User, error)
-	GetUserByGoogleID(googleID string) (*models.User, error)
+	GetUserByUserUID(UserUID string) (*models.User, error)
 	UpdateUser(user *models.User) error
-	DeleteUser(userId uuid.UUID) error
+	DeleteUser(UserUID string) error
 	CheckHashPassword(user *models.User, password string) bool
 }
 
@@ -32,16 +29,8 @@ func (s *userService) CreateUser(user *models.User) error {
 	return s.store.CreateUser(user)
 }
 
-func (s *userService) GetUserByID(userId uuid.UUID) (*models.User, error) {
-	return s.store.GetUserByID(userId)
-}
-
-func (s *userService) GetUserByEmail(email string) (*models.User, error) {
-	return s.store.GetUserByEmail(email)
-}
-
-func (s *userService) GetUserByGoogleID(googleID string) (*models.User, error) {
-	return s.store.GetUserByGoogleID(googleID)
+func (s *userService) GetUserByUserUID(UserUID string) (*models.User, error) {
+	return s.store.GetUserByUserUID(UserUID)
 }
 
 func (s *userService) UpdateUser(user *models.User) error {
@@ -52,9 +41,9 @@ func (s *userService) UpdateUser(user *models.User) error {
 	return s.store.UpdateUser(user)
 }
 
-func (s *userService) DeleteUser(userId uuid.UUID) error {
+func (s *userService) DeleteUser(UserUID string) error {
 
-	return s.store.DeleteUser(userId)
+	return s.store.DeleteUser(UserUID)
 }
 
 func (s *userService) CheckHashPassword(user *models.User, password string) bool {

@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/yomek33/talki/internal/gemini"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/stores"
 )
 
 type PhraseService interface {
-	GeneratePhrases(ctx context.Context, articleID uint, userID uuid.UUID) ([]string, error)
+	GeneratePhrases(ctx context.Context, articleID uint, UserUID string) ([]string, error)
 }
 
 type phraseService struct {
@@ -32,8 +31,8 @@ func GeneratePhrases(topic string) ([]string, error) {
 	return []string{}, nil
 }
 
-func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, userID uuid.UUID) ([]string, error) {
-	article, err := s.ArticleService.GetArticleByID(articleID, userID)
+func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, UserUID string) ([]string, error) {
+	article, err := s.ArticleService.GetArticleByID(articleID, UserUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch article: %w", err)
 	}

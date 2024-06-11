@@ -75,6 +75,11 @@ func main() {
 	h.SetDefault(e)
 	h.SetAPIRoutes(e)
 
+	// err = db.AutoMigrate(&models.Article{})
+	// if err != nil {
+	// 	panic("failed to migrate database")
+	// }
+
 	port, err := strconv.Atoi(cfg.Port)
 	if err != nil {
 		log.Fatalf("Invalid port number: %v", err)

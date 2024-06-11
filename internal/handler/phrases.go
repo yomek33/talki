@@ -23,8 +23,8 @@ type phraseHandler struct {
 }
 
 func (h *phraseHandler) GeneratePhrases(c echo.Context) error {
-	// Parse articleID and userID from the request
-	userID, err := getUserIDByContext(c)
+	// Parse articleID and UserUID from the request
+	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
@@ -39,7 +39,7 @@ func (h *phraseHandler) GeneratePhrases(c echo.Context) error {
 	defer cancel()
 
 	// Call the service to generate phrases
-	phrases, err := h.PhraseService.GeneratePhrases(ctx, uint(articleID), userID)
+	phrases, err := h.PhraseService.GeneratePhrases(ctx, uint(articleID), UserUID)
 	if err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrFailedGeneratePhrases)
 	}

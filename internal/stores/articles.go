@@ -3,8 +3,6 @@ package stores
 import (
 	"errors"
 
-	"github.com/google/uuid"
-
 	"github.com/yomek33/talki/internal/models"
 	"gorm.io/gorm"
 )
@@ -16,10 +14,10 @@ const (
 
 type ArticleStore interface {
 	CreateArticle(article *models.Article) error
-	GetArticleByID(id uint, userID uuid.UUID) (*models.Article, error)
+	GetArticleByID(id uint, UserUID string) (*models.Article, error)
 	UpdateArticle(id uint, article *models.Article) error
-	DeleteArticle(id uint, userID uuid.UUID) error
-	GetAllArticles(searchQuery string, userID uuid.UUID) ([]models.Article, error)
+	DeleteArticle(id uint, UserUID string) error
+	GetAllArticles(searchQuery string, UserUID string) ([]models.Article, error)
 }
 
 type articleStore struct {
@@ -35,9 +33,9 @@ func (s *articleStore) CreateArticle(article *models.Article) error {
 	})
 }
 
-func (s *articleStore) GetArticleByID(id uint, userID uuid.UUID) (*models.Article, error) {
+func (s *articleStore) GetArticleByID(id uint, UserUID string) (*models.Article, error) {
 	var article models.Article
-	err := s.DB.Where("id = ? AND user_id = ?", id, userID).First(&article).Error
+	err := s.DB.Where("id = ? AND user_uid = ?", id, UserUID).First(&article).Error
 	return &article, err
 }
 
@@ -53,15 +51,15 @@ func (s *articleStore) UpdateArticle(id uint, article *models.Article) error {
 	})
 }
 
-func (s *articleStore) DeleteArticle(id uint, userID uuid.UUID) error {
+func (s *articleStore) DeleteArticle(id uint, UserUID string) error {
 	return s.PerformDBTransaction(func(tx *gorm.DB) error {
-		return tx.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Article{}).Error
+		return tx.Where("id = ? AND user_uid = ?", id, UserUID).Delete(&models.Article{}).Error
 	})
 }
 
-func (s *articleStore) GetAllArticles(searchQuery string, userID uuid.UUID) ([]models.Article, error) {
+func (s *articleStore) GetAllArticles(searchQuery string, UserUID string) ([]models.Article, error) {
 	var articles []models.Article
-	query := s.DB.Where("user_id = ?", userID)
+	query := s.DB.Where("user_uid = ?", UserUID)
 	if searchQuery != "" {
 		query = query.Where("title LIKE ?", "%"+searchQuery+"%")
 	}

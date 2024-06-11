@@ -8,7 +8,6 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/internal/config"
 	"github.com/yomek33/talki/internal/models"
@@ -66,7 +65,7 @@ func FirebaseAuthMiddleware(firebaseAuth *auth.Client) echo.MiddlewareFunc {
 
 			// Pass the decoded token to the next handler
 			c.Set("decodedToken", decoded)
-
+			c.Set("userUserUID", decoded.UID)
 			return next(c)
 		}
 	}
@@ -89,9 +88,9 @@ func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
 		return respondWithError(c, http.StatusUnauthorized, "Invalid ID token")
 	}
 
-	user, err := h.UserService.GetUserByGoogleID(token.UID)
+	user, err := h.UserService.GetUserByUserUID(token.UID)
 	if err != nil && err != gorm.ErrRecordNotFound {
-		h.logError(err, "GetUserByGoogleID error")
+		h.logError(err, "GetUserByUserUID error")
 		return respondWithError(c, http.StatusInternalServerError, err.Error())
 	}
 
@@ -102,9 +101,8 @@ func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
 			return respondWithError(c, http.StatusBadRequest, "Invalid token claims")
 		}
 		user = &models.User{
-			GoogleID: token.UID,
-			Name:     name,
-			UserID:   uuid.New(),
+			UserUID: token.UID,
+			Name:    name,
 		}
 		if err := h.UserService.CreateUser(user); err != nil {
 			h.logError(err, "CreateUser error")
@@ -127,9 +125,6 @@ func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
 	}
 	log.Println("Setting cookie:", cookie)
 	c.SetCookie(cookie)
-
-	log.Println("UserID: ", user.UserID)
-	c.Set("user", user)
 
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Success",

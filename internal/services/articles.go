@@ -4,18 +4,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
-
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/stores"
 )
 
 type ArticleService interface {
 	CreateArticle(article *models.Article) error
-	GetArticleByID(id uint, userID uuid.UUID) (*models.Article, error)
+	GetArticleByID(id uint, UserUID string) (*models.Article, error)
 	UpdateArticle(id uint, article *models.Article) error
-	DeleteArticle(id uint, userID uuid.UUID) error
-	GetAllArticles(searchQuery string, userID uuid.UUID) ([]models.Article, error)
+	DeleteArticle(id uint, UserUID string) error
+	GetAllArticles(searchQuery string, UserUID string) ([]models.Article, error)
 }
 
 type articleService struct {
@@ -34,8 +32,8 @@ func (s *articleService) CreateArticle(article *models.Article) error {
 	return s.store.CreateArticle(article)
 }
 
-func (s *articleService) GetArticleByID(id uint, userID uuid.UUID) (*models.Article, error) {
-	article, err := s.store.GetArticleByID(id, userID)
+func (s *articleService) GetArticleByID(id uint, UserUID string) (*models.Article, error) {
+	article, err := s.store.GetArticleByID(id, UserUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get article by ID: %w", err)
 	}
@@ -52,10 +50,10 @@ func (s *articleService) UpdateArticle(id uint, article *models.Article) error {
 	return s.store.UpdateArticle(id, article)
 }
 
-func (s *articleService) DeleteArticle(id uint, userID uuid.UUID) error {
-	return s.store.DeleteArticle(id, userID)
+func (s *articleService) DeleteArticle(id uint, UserUID string) error {
+	return s.store.DeleteArticle(id, UserUID)
 }
 
-func (s *articleService) GetAllArticles(searchQuery string, userID uuid.UUID) ([]models.Article, error) {
-	return s.store.GetAllArticles(searchQuery, userID)
+func (s *articleService) GetAllArticles(searchQuery string, UserUID string) ([]models.Article, error) {
+	return s.store.GetAllArticles(searchQuery, UserUID)
 }

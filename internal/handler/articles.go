@@ -45,11 +45,11 @@ func (h *articleHandler) GetArticleByID(c echo.Context) error {
 	if err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
 	}
-	userID, err := getUserIDByContext(c)
+	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
-	article, err := h.ArticleService.GetArticleByID(uint(id), userID)
+	article, err := h.ArticleService.GetArticleByID(uint(id), UserUID)
 	if err != nil {
 		return respondWithError(c, http.StatusNotFound, ErrArticleNotFound)
 	}
@@ -64,12 +64,12 @@ func (h *articleHandler) CreateArticle(c echo.Context) error {
 	if err := validateArticle(&article); err != nil {
 		return respondWithError(c, http.StatusBadRequest, err.Error())
 	}
-	userID, err := getUserIDByContext(c)
+	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
-	article.UserID = userID
-	log.Println(article.UserID)
+	article.UserUID = UserUID
+	log.Println(article.UserUID)
 	if err := h.ArticleService.CreateArticle(&article); err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrFailedCreateArticle)
 	}
@@ -77,7 +77,7 @@ func (h *articleHandler) CreateArticle(c echo.Context) error {
 }
 
 func (h *articleHandler) UpdateArticle(c echo.Context) error {
-	userID, err := getUserIDByContext(c)
+	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
@@ -86,7 +86,7 @@ func (h *articleHandler) UpdateArticle(c echo.Context) error {
 	if err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
 	}
-	article, err := h.ArticleService.GetArticleByID(uint(id), userID)
+	article, err := h.ArticleService.GetArticleByID(uint(id), UserUID)
 	if err != nil {
 		return respondWithError(c, http.StatusNotFound, ErrArticleNotFound)
 	}
@@ -96,7 +96,7 @@ func (h *articleHandler) UpdateArticle(c echo.Context) error {
 	if err := validateArticle(article); err != nil {
 		return respondWithError(c, http.StatusBadRequest, err.Error())
 	}
-	if article.UserID != userID {
+	if article.UserUID != UserUID {
 		return respondWithError(c, http.StatusForbidden, ErrForbiddenModify)
 	}
 	if err := h.ArticleService.UpdateArticle(uint(id), article); err != nil {
@@ -110,11 +110,11 @@ func (h *articleHandler) DeleteArticle(c echo.Context) error {
 	if err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidID)
 	}
-	userID, err := getUserIDByContext(c)
+	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
-	if err := h.ArticleService.DeleteArticle(uint(id), userID); err != nil {
+	if err := h.ArticleService.DeleteArticle(uint(id), UserUID); err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrFailedDeleteArticle)
 	}
 	return c.NoContent(http.StatusNoContent)
@@ -122,11 +122,11 @@ func (h *articleHandler) DeleteArticle(c echo.Context) error {
 
 func (h *articleHandler) GetAllArticles(c echo.Context) error {
 	searchQuery := c.QueryParam("search")
-	userID, err := getUserIDByContext(c)
+	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
-	articles, err := h.ArticleService.GetAllArticles(searchQuery, userID)
+	articles, err := h.ArticleService.GetAllArticles(searchQuery, UserUID)
 	if err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrFailedRetrieveArticles)
 	}

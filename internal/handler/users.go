@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/services"
@@ -19,7 +18,7 @@ const (
 	ErrCouldNotCreateUser  = "could not create user"
 	ErrInvalidUserToken    = "invalid user token"
 	ErrUserNotFound        = "user not found"
-	ErrInvalidUserID       = "invalid user ID"
+	ErrInvalidUserUID      = "invalid user ID"
 	ErrCouldNotUpdateUser  = "could not update user"
 	ErrCouldNotDeleteUser  = "could not delete user"
 	ErrInvalidCredentials  = "invalid credentials"
@@ -28,7 +27,6 @@ const (
 
 type UserHandler interface {
 	CreateUser(c echo.Context) error
-	GetUserByID(c echo.Context) error
 	UpdateUser(c echo.Context) error
 	DeleteUser(c echo.Context) error
 	GetGoogleLoginSignin(c echo.Context) error
@@ -46,8 +44,6 @@ func (h *userHandler) CreateUser(c echo.Context) error {
 	if err := c.Bind(&user); err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidUserData)
 	}
-
-	user.UserID = uuid.New()
 	if err := validateUser(&user); err != nil {
 		return respondWithError(c, http.StatusBadRequest, err.Error())
 	}
@@ -58,21 +54,8 @@ func (h *userHandler) CreateUser(c echo.Context) error {
 	return c.JSON(http.StatusCreated, user)
 }
 
-func (h *userHandler) GetUserByID(c echo.Context) error {
-	userID, err := getUserIDByContext(c)
-	if err != nil {
-		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
-	}
-
-	user, err := h.UserService.GetUserByID(userID)
-	if err != nil {
-		return respondWithError(c, http.StatusNotFound, ErrUserNotFound)
-	}
-	return c.JSON(http.StatusOK, user)
-}
-
 func (h *userHandler) UpdateUser(c echo.Context) error {
-	userID, err := getUserIDByContext(c)
+	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
 	}
@@ -84,8 +67,8 @@ func (h *userHandler) UpdateUser(c echo.Context) error {
 	if err := validateUser(&user); err != nil {
 		return respondWithError(c, http.StatusBadRequest, err.Error())
 	}
-	if user.UserID != userID {
-		return respondWithError(c, http.StatusBadRequest, ErrInvalidUserID)
+	if user.UserUID != UserUID {
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidUserUID)
 	}
 	if err := h.UserService.UpdateUser(&user); err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrCouldNotUpdateUser)
@@ -94,40 +77,24 @@ func (h *userHandler) UpdateUser(c echo.Context) error {
 }
 
 func (h *userHandler) DeleteUser(c echo.Context) error {
-	userID, err := getUserIDByContext(c)
+	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
 
-	if err = h.UserService.DeleteUser(userID); err != nil {
+	if err = h.UserService.DeleteUser(UserUID); err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrCouldNotDeleteUser)
 	}
 	return c.NoContent(http.StatusNoContent)
 }
 
-// Helper functions
-func getUserIDByContext(c echo.Context) (uuid.UUID, error) {
-	userIDValue := c.Get("userID")
-	if userIDValue == nil {
-		err := echo.NewHTTPError(http.StatusUnauthorized, "User ID not found in context")
-		log.Println(err.Error())
-		return uuid.Nil, err
+func getUserUIDByContext(c echo.Context) (string, error) {
+	user := c.Get("userUserUID").(string)
+	if user == "" {
+		return "", errors.New("invalid user token")
 	}
-
-	userID, ok := userIDValue.(uuid.UUID)
-	if !ok {
-		err := echo.NewHTTPError(http.StatusBadRequest, "User ID is not a valid UUID")
-		log.Println(err.Error())
-		return uuid.Nil, err
-	}
-
-	if userID == uuid.Nil {
-		err := echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
-		log.Println(err.Error())
-		return uuid.Nil, err
-	}
-
-	return userID, nil
+	log.Println("UserUID: ", user)
+	return user, nil
 }
 
 func validateUser(user *models.User) error {
