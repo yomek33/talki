@@ -6,8 +6,6 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
@@ -26,9 +24,7 @@ type application struct {
 
 func main() {
 	// Initialize Echo
-	e := echo.New()
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	e := handler.Echo()
 
 	// Load configuration
 	cfg, err := config.LoadConfig()
@@ -75,6 +71,7 @@ func main() {
 	services := services.NewServices(stores, app.GeminiClient)
 	h := handler.NewHandler(services, cfg.JWTSecretKey, app.Firebase)
 
+	e.Use(handler.FirebaseAuthMiddleware(app.Firebase.AuthClient))
 	h.SetDefault(e)
 	h.SetAPIRoutes(e)
 

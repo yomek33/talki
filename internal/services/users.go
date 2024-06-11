@@ -25,16 +25,11 @@ type userService struct {
 }
 
 func (s *userService) CreateUser(user *models.User) error {
-	// hashedPassword, err := PasswordEncrypt(user.Password)
-	// if err != nil {
-	// 	return err
-	// }
-	// user.Password = hashedPassword
-	// err = s.store.CreateUser(user)
-	// if err != nil {
-	// 	return err
-	// }
-	return nil
+	if user == nil {
+		return errors.New("user cannot be nil")
+	}
+
+	return s.store.CreateUser(user)
 }
 
 func (s *userService) GetUserByID(userId uuid.UUID) (*models.User, error) {

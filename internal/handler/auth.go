@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	firebase "firebase.google.com/go/v4"
@@ -43,12 +44,32 @@ func InitFirebase(ctx context.Context) (*Firebase, error) {
 	return &Firebase{App: app, AuthClient: auth}, nil
 }
 
-func (h *userHandler) checkFirebaseIDToken(idToken string) (*auth.Token, error) {
-	token, err := h.Firebase.AuthClient.VerifyIDToken(context.Background(), idToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify ID token: %v", err)
+func FirebaseAuthMiddleware(firebaseAuth *auth.Client) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if c.Path() == "/api/auth" {
+				return next(c)
+			}
+
+			cookie, err := c.Cookie("session")
+			if err != nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, "No session cookie found")
+			}
+
+			decoded, err := firebaseAuth.VerifySessionCookieAndCheckRevoked(context.Background(), cookie.Value)
+			if err != nil {
+				if auth.IsSessionCookieRevoked(err) {
+					return echo.NewHTTPError(http.StatusUnauthorized, "Session cookie revoked")
+				}
+				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid session cookie")
+			}
+
+			// Pass the decoded token to the next handler
+			c.Set("decodedToken", decoded)
+
+			return next(c)
+		}
 	}
-	return token, nil
 }
 
 func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
@@ -56,6 +77,7 @@ func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
 
 	var req UserSignUpRequest
 	if err := c.Bind(&req); err != nil {
+		h.logError(err, "Invalid request payload")
 		return respondWithError(c, http.StatusBadRequest, "Invalid request payload")
 	}
 
@@ -63,7 +85,7 @@ func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
 
 	token, err := h.Firebase.AuthClient.VerifyIDToken(c.Request().Context(), idToken)
 	if err != nil {
-		h.logError(err, "failed to verify ID token")
+		h.logError(err, "Failed to verify ID token")
 		return respondWithError(c, http.StatusUnauthorized, "Invalid ID token")
 	}
 
@@ -74,20 +96,26 @@ func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
 	}
 
 	if user == nil {
+		name, ok := token.Claims["name"].(string)
+		if !ok {
+			h.logError(err, "Name claim missing or invalid")
+			return respondWithError(c, http.StatusBadRequest, "Invalid token claims")
+		}
 		user = &models.User{
 			GoogleID: token.UID,
-			Name:     token.Claims["name"].(string),
+			Name:     name,
 			UserID:   uuid.New(),
 		}
 		if err := h.UserService.CreateUser(user); err != nil {
 			h.logError(err, "CreateUser error")
 			return respondWithError(c, http.StatusInternalServerError, err.Error())
 		}
+		log.Printf("User created: %v", user)
 	}
 
 	cookieValue, err := h.Firebase.AuthClient.SessionCookie(c.Request().Context(), idToken, config.SessionDuration)
 	if err != nil {
-		h.logError(err, "failed to create session cookie")
+		h.logError(err, "Failed to create session cookie")
 		return respondWithError(c, http.StatusInternalServerError, "Failed to create session cookie")
 	}
 	cookie := &http.Cookie{
@@ -95,9 +123,13 @@ func (h *userHandler) GetGoogleLoginSignin(c echo.Context) error {
 		Value:    cookieValue,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   false, // Ensure Secure is set as per your environment
 	}
+	log.Println("Setting cookie:", cookie)
 	c.SetCookie(cookie)
+
+	log.Println("UserID: ", user.UserID)
+	c.Set("user", user)
 
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Success",

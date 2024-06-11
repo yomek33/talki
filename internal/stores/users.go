@@ -31,7 +31,6 @@ func (store *userStore) CreateUser(user *models.User) error {
 	if user == nil {
 		return errors.New("create user: " + ErrUserCannotBeNil)
 	}
-
 	return store.PerformDBTransaction(func(tx *gorm.DB) error {
 		return tx.Create(user).Error
 	})

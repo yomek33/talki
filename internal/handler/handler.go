@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -44,7 +43,6 @@ func (h *Handlers) SetAPIRoutes(e *echo.Echo) {
 	api.POST("/auth", h.GetGoogleLoginSignin)
 
 	r := api.Group("")
-	r.Use(JWTMiddleware(h.jwtSecretKey))
 
 	r.POST("/articles", h.CreateArticle)
 	r.GET("/articles", h.GetAllArticles)
@@ -80,43 +78,10 @@ func Echo() *echo.Echo {
 	}))
 
 	e.Use(middleware.Secure())
-	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
-		TokenLookup:    "header:X-CSRF-Token",
-		CookieName:     "_csrf",
-		CookiePath:     "/",
-		CookieHTTPOnly: true,
-	}))
 
 	e.HTTPErrorHandler = customHTTPErrorHandler
 
 	return e
-}
-
-func JWTMiddleware(jwtSecretKey string) echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			// Bypass middleware for OPTIONS requests
-			if c.Request().Method == http.MethodOptions {
-				return next(c)
-			}
-
-			// Extract token from cookie
-			tokenString, err := c.Cookie("jwt")
-			if err != nil || tokenString.Value == "" {
-				return respondWithError(c, http.StatusUnauthorized, "missing or malformed jwt")
-			}
-
-			// Parse and validate token
-			token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
-				return []byte(jwtSecretKey), nil
-			})
-			if err != nil || !token.Valid {
-				return respondWithError(c, http.StatusUnauthorized, "invalid token")
-			}
-
-			return next(c)
-		}
-	}
 }
 
 func respondWithError(c echo.Context, code int, message string) error {
