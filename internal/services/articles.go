@@ -3,13 +3,14 @@ package services
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/stores"
 )
 
 type ArticleService interface {
-	CreateArticle(article *models.Article) error
+	CreateArticle(article *models.Article) (uint, error)
 	GetArticleByID(id uint, UserUID string) (*models.Article, error)
 	UpdateArticle(id uint, article *models.Article) error
 	DeleteArticle(id uint, UserUID string) error
@@ -25,14 +26,16 @@ var (
 	ErrMismatchedArticleID = errors.New("mismatched article ID")
 )
 
-func (s *articleService) CreateArticle(article *models.Article) error {
+func (s *articleService) CreateArticle(article *models.Article) (uint, error) {
 	if article == nil {
-		return errors.New("article cannot be nil")
+		return 0, errors.New("article cannot be nil")
 	}
 	return s.store.CreateArticle(article)
 }
 
 func (s *articleService) GetArticleByID(id uint, UserUID string) (*models.Article, error) {
+	log.Println("service article id", id)
+	log.Println("service UserUID", UserUID)
 	article, err := s.store.GetArticleByID(id, UserUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get article by ID: %w", err)

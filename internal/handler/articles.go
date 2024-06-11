@@ -44,10 +44,6 @@ type articleHandler struct {
 }
 
 func (h *articleHandler) GetArticleByID(c echo.Context) error {
-	if h.ArticleService == nil {
-		return respondWithError(c, http.StatusInternalServerError, "ArticleService is not initialized")
-	}
-
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
@@ -64,10 +60,6 @@ func (h *articleHandler) GetArticleByID(c echo.Context) error {
 }
 
 func (h *articleHandler) CreateArticle(c echo.Context) error {
-	if h.ArticleService == nil || h.PhraseService == nil {
-		return respondWithError(c, http.StatusInternalServerError, "Services are not properly initialized")
-	}
-
 	var article models.Article
 	if err := bindAndValidateArticle(c, &article); err != nil {
 		return respondWithError(c, http.StatusBadRequest, err.Error())
@@ -84,11 +76,14 @@ func (h *articleHandler) CreateArticle(c echo.Context) error {
 
 	resultChan := make(chan error, 1)
 	go func() {
-		err := h.ArticleService.CreateArticle(&article)
+		id, err := h.ArticleService.CreateArticle(&article)
 		if err != nil {
 			log.Printf("Error creating article: %v\n", err)
+			resultChan <- err
+			return
 		}
-		resultChan <- err
+		article.ID = id
+		resultChan <- nil
 	}()
 
 	select {
@@ -102,10 +97,12 @@ func (h *articleHandler) CreateArticle(c echo.Context) error {
 
 	var phrases []models.Phrase
 	phraseErrChan := make(chan error, 1)
+	phrasesChan := make(chan []models.Phrase, 1)
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Printf("Recovered from panic: %v\n", r)
+				log.Printf("Recovered from panic: %v\n", r)
+				phraseErrChan <- fmt.Errorf("panic occurred: %v", r)
 			}
 		}()
 
@@ -115,6 +112,12 @@ func (h *articleHandler) CreateArticle(c echo.Context) error {
 			phraseErrChan <- err
 			return
 		}
+		if phrases == nil {
+			log.Printf("Generated phrases are nil")
+			phraseErrChan <- fmt.Errorf("generated phrases are nil")
+			return
+		}
+
 		err = h.PhraseService.StorePhrases(article.ID, phrases)
 		if err != nil {
 			log.Printf("Failed to store phrases: %v\n", err)
@@ -122,26 +125,25 @@ func (h *articleHandler) CreateArticle(c echo.Context) error {
 			return
 		}
 		phraseErrChan <- nil
+		phrasesChan <- phrases
 	}()
 
-	select {
-	case <-ctx.Done():
-		return respondWithError(c, http.StatusGatewayTimeout, "request timed out while generating/storing phrases")
-	case err := <-phraseErrChan:
-		if err != nil {
-			return respondWithError(c, http.StatusInternalServerError, "failed to generate/store phrases")
-		}
-	}
+	log.Println("Waiting for phrases to be generated and stored")
+	log.Println("send phrases to the client", phrases)
 
-	return c.JSON(http.StatusCreated, phrases)
+	phrase := <-phrasesChan
+	if err := <-phraseErrChan; err != nil {
+		return respondWithError(c, http.StatusInternalServerError, ErrFailedGeneratePhrases)
+	}
+	return c.JSON(http.StatusCreated, phrase)
 }
 
 func bindAndValidateArticle(c echo.Context, article *models.Article) error {
 	if err := c.Bind(article); err != nil {
-		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleData)
+		return fmt.Errorf("%w: %v", ErrInvalidArticleData, err)
 	}
 	if err := validateArticle(article); err != nil {
-		return respondWithError(c, http.StatusBadRequest, err.Error())
+		return err
 	}
 	return nil
 }

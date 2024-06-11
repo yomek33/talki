@@ -16,7 +16,7 @@ func NewServices(s *stores.Stores, geminiClient *gemini.Client) *Services {
 	return &Services{
 		UserService:    &userService{store: s.UserStore},
 		ArticleService: &articleService{store: s.ArticleStore},
-		PhraseService:  &phraseService{store: s.PhraseStore},
+		PhraseService:  &phraseService{store: s.PhraseStore, ArticleService: &articleService{store: s.ArticleStore}, GeminiClient: geminiClient},
 		GeminiClient:   geminiClient,
 	}
 }

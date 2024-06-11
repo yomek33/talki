@@ -2,13 +2,14 @@ package gemini
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/google/generative-ai-go/genai"
 )
 
-// GenerateContent generates content based on the provided prompt
 func (c *Client) GenerateJsonContent(ctx context.Context, prompt string) ([]string, error) {
 	model := c.client.GenerativeModel("gemini-1.5-flash")
 	model.ResponseMIMEType = "application/json"
@@ -22,24 +23,32 @@ func (c *Client) GenerateJsonContent(ctx context.Context, prompt string) ([]stri
 		return nil, fmt.Errorf("failed to generate content: %w", err)
 	}
 
+	if len(res.Candidates) == 0 || len(res.Candidates[0].Content.Parts) == 0 {
+		return nil, fmt.Errorf("no content generated")
+	}
+
 	var output []string
 	for _, part := range res.Candidates[0].Content.Parts {
-		if txt, ok := part.(genai.Text); ok {
-			outputText := strings.ReplaceAll(string(txt), "\\", "")
-			outputText = strings.ReplaceAll(outputText, "\"", "")
-			output = append(output, outputText)
+		var jsonParts []string
+		partStr, ok := part.(genai.Text) // partをstring型に変換しようと試みます
+		if !ok {
+			return nil, fmt.Errorf("part is not a string")
 		}
+		if err := json.Unmarshal([]byte(partStr), &jsonParts); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
+		}
+		output = append(output, jsonParts...)
 	}
 
 	return output, nil
 }
 
-// GeneratePhrases generates phrases based on the given topic
 func (c *Client) GeneratePhrases(ctx context.Context, topic string) ([]string, error) {
+	log.Print("Generating phrases")
 	prompt := generatePrompt(topic)
 	output, err := c.GenerateJsonContent(ctx, prompt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate content: %w", err)
+		return nil, fmt.Errorf("failed to generate phrases: %w", err)
 	}
 
 	return output, nil

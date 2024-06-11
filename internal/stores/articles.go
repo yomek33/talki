@@ -2,6 +2,7 @@ package stores
 
 import (
 	"errors"
+	"log"
 
 	"github.com/yomek33/talki/internal/models"
 	"gorm.io/gorm"
@@ -13,7 +14,7 @@ const (
 )
 
 type ArticleStore interface {
-	CreateArticle(article *models.Article) error
+	CreateArticle(article *models.Article) (uint, error)
 	GetArticleByID(id uint, UserUID string) (*models.Article, error)
 	UpdateArticle(id uint, article *models.Article) error
 	DeleteArticle(id uint, UserUID string) error
@@ -24,16 +25,21 @@ type articleStore struct {
 	BaseStore
 }
 
-func (s *articleStore) CreateArticle(article *models.Article) error {
+func (s *articleStore) CreateArticle(article *models.Article) (uint, error) {
 	if article == nil {
-		return errors.New(ErrArticleCannotBeNil)
+		return 0, errors.New(ErrArticleCannotBeNil)
 	}
-	return s.PerformDBTransaction(func(tx *gorm.DB) error {
+	err := s.PerformDBTransaction(func(tx *gorm.DB) error {
 		return tx.Create(article).Error
 	})
+	if err != nil {
+		return 0, err
+	}
+	return article.ID, nil
 }
 
 func (s *articleStore) GetArticleByID(id uint, UserUID string) (*models.Article, error) {
+	log.Println("store article id", id)
 	var article models.Article
 	err := s.DB.Where("id = ? AND user_uid = ?", id, UserUID).First(&article).Error
 	return &article, err

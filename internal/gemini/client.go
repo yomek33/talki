@@ -18,7 +18,6 @@ func NewClient(ctx context.Context, apiKey string) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create genai client: %w", err)
 	}
-
 	return &Client{client: client}, nil
 }
 

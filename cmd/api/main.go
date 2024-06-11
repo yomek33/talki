@@ -50,7 +50,7 @@ func main() {
 	}
 
 	geminiClient, err := gemini.NewClient(context.Background(), cfg.GeminiAPIKey)
-	if err != nil {
+	if err != nil || geminiClient == nil {
 		log.Fatalf("Failed to create Gemini client: %v", err)
 	}
 	defer geminiClient.Close()

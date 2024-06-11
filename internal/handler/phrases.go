@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,6 +24,7 @@ type phraseHandler struct {
 }
 
 func (h *phraseHandler) GeneratePhrases(c echo.Context) error {
+	log.Printf("Generating phrases for article")
 	// Parse articleID and UserUID from the request
 	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
