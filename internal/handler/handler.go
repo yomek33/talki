@@ -23,7 +23,7 @@ type Handlers struct {
 func NewHandler(s *services.Services, jwtSecretKey string, firebase *Firebase) *Handlers {
 	return &Handlers{
 		UserHandler:    &userHandler{UserService: s.UserService, jwtSecretKey: jwtSecretKey, Firebase: firebase},
-		ArticleHandler: &articleHandler{ArticleService: s.ArticleService},
+		ArticleHandler: &articleHandler{ArticleService: s.ArticleService, PhraseService: s.PhraseService},
 		PhraseHandler:  &phraseHandler{PhraseService: s.PhraseService},
 		jwtSecretKey:   jwtSecretKey,
 		Firebase:       firebase,

@@ -10,5 +10,5 @@ type Phrase struct {
 	ArticleID  uint `gorm:"index"`
 	Text       string
 	Importance string
-	Article    Article
+	Article    Article `gorm:"foreignKey:ArticleID"`
 }

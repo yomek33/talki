@@ -16,6 +16,7 @@ func NewStores(db *gorm.DB) *Stores {
 		DB:           db,
 		UserStore:    &userStore{BaseStore{DB: db}},
 		ArticleStore: &articleStore{BaseStore{DB: db}},
+		PhraseStore:  &phraseStore{BaseStore{DB: db}},
 	}
 }
 

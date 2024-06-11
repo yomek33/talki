@@ -10,7 +10,8 @@ import (
 )
 
 type PhraseService interface {
-	GeneratePhrases(ctx context.Context, articleID uint, UserUID string) ([]string, error)
+	GeneratePhrases(ctx context.Context, articleID uint, UserUID string) ([]models.Phrase, error)
+	StorePhrases(articleID uint, phrases []models.Phrase) error
 }
 
 type phraseService struct {
@@ -31,28 +32,31 @@ func GeneratePhrases(topic string) ([]string, error) {
 	return []string{}, nil
 }
 
-func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, UserUID string) ([]string, error) {
-	article, err := s.ArticleService.GetArticleByID(articleID, UserUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch article: %w", err)
-	}
+func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, UserUID string) ([]models.Phrase, error) {
+	// article, err := s.ArticleService.GetArticleByID(articleID, UserUID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to fetch article: %w", err)
+	// }
 
-	phrases, err := s.GeminiClient.GeneratePhrases(ctx, article.Content)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate phrases: %w", err)
-	}
+	// phrases, err := s.GeminiClient.GeneratePhrases(ctx, article.Content)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to generate phrases: %w", err)
+	// }
 
+	var phrases []models.Phrase
+	for i := range 10 {
+		phrases = append(phrases, models.Phrase{
+			ArticleID:  articleID,
+			Text:       fmt.Sprintf("phrase %d", i),
+			Importance: "high",
+		})
+	}
 	return phrases, nil
 }
 
-func (s *phraseService) StorePhrases(articleID uint, phrases []string) error {
+func (s *phraseService) StorePhrases(articleID uint, phrases []models.Phrase) error {
 	for _, phrase := range phrases {
-		newPhrase := &models.Phrase{
-			ArticleID:  articleID,
-			Text:       phrase,
-			Importance: determineImportance(phrase),
-		}
-		if err := s.store.CreatePhrase(newPhrase); err != nil {
+		if err := s.store.CreatePhrase(&phrase); err != nil {
 			return fmt.Errorf("failed to store phrase: %w", err)
 		}
 	}

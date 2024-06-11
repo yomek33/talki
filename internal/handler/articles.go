@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
@@ -38,9 +40,14 @@ type ArticleHandler interface {
 // articleHandler is the concrete implementation of ArticleHandler.
 type articleHandler struct {
 	services.ArticleService
+	services.PhraseService
 }
 
 func (h *articleHandler) GetArticleByID(c echo.Context) error {
+	if h.ArticleService == nil {
+		return respondWithError(c, http.StatusInternalServerError, "ArticleService is not initialized")
+	}
+
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
@@ -57,23 +64,86 @@ func (h *articleHandler) GetArticleByID(c echo.Context) error {
 }
 
 func (h *articleHandler) CreateArticle(c echo.Context) error {
-	var article models.Article
-	if err := c.Bind(&article); err != nil {
-		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleData)
+	if h.ArticleService == nil || h.PhraseService == nil {
+		return respondWithError(c, http.StatusInternalServerError, "Services are not properly initialized")
 	}
-	if err := validateArticle(&article); err != nil {
+
+	var article models.Article
+	if err := bindAndValidateArticle(c, &article); err != nil {
 		return respondWithError(c, http.StatusBadRequest, err.Error())
 	}
+
 	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
 	article.UserUID = UserUID
-	log.Println(article.UserUID)
-	if err := h.ArticleService.CreateArticle(&article); err != nil {
-		return respondWithError(c, http.StatusInternalServerError, ErrFailedCreateArticle)
+
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+
+	resultChan := make(chan error, 1)
+	go func() {
+		err := h.ArticleService.CreateArticle(&article)
+		if err != nil {
+			log.Printf("Error creating article: %v\n", err)
+		}
+		resultChan <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		return respondWithError(c, http.StatusGatewayTimeout, "request timed out while creating article")
+	case err := <-resultChan:
+		if err != nil {
+			return respondWithError(c, http.StatusInternalServerError, ErrFailedCreateArticle)
+		}
 	}
-	return c.JSON(http.StatusCreated, article)
+
+	var phrases []models.Phrase
+	phraseErrChan := make(chan error, 1)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("Recovered from panic: %v\n", r)
+			}
+		}()
+
+		phrases, err = h.PhraseService.GeneratePhrases(ctx, article.ID, UserUID)
+		if err != nil {
+			log.Printf("Failed to generate phrases: %v\n", err)
+			phraseErrChan <- err
+			return
+		}
+		err = h.PhraseService.StorePhrases(article.ID, phrases)
+		if err != nil {
+			log.Printf("Failed to store phrases: %v\n", err)
+			phraseErrChan <- err
+			return
+		}
+		phraseErrChan <- nil
+	}()
+
+	select {
+	case <-ctx.Done():
+		return respondWithError(c, http.StatusGatewayTimeout, "request timed out while generating/storing phrases")
+	case err := <-phraseErrChan:
+		if err != nil {
+			return respondWithError(c, http.StatusInternalServerError, "failed to generate/store phrases")
+		}
+	}
+
+	return c.JSON(http.StatusCreated, phrases)
+}
+
+func bindAndValidateArticle(c echo.Context, article *models.Article) error {
+	if err := c.Bind(article); err != nil {
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleData)
+	}
+	if err := validateArticle(article); err != nil {
+		return respondWithError(c, http.StatusBadRequest, err.Error())
+	}
+	return nil
 }
 
 func (h *articleHandler) UpdateArticle(c echo.Context) error {
