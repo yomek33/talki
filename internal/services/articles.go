@@ -3,7 +3,6 @@ package services
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/stores"
@@ -34,8 +33,6 @@ func (s *articleService) CreateArticle(article *models.Article) (uint, error) {
 }
 
 func (s *articleService) GetArticleByID(id uint, UserUID string) (*models.Article, error) {
-	log.Println("service article id", id)
-	log.Println("service UserUID", UserUID)
 	article, err := s.store.GetArticleByID(id, UserUID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get article by ID: %w", err)

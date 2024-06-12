@@ -41,7 +41,7 @@ func (s *articleStore) CreateArticle(article *models.Article) (uint, error) {
 func (s *articleStore) GetArticleByID(id uint, UserUID string) (*models.Article, error) {
 	log.Println("store article id", id)
 	var article models.Article
-	err := s.DB.Where("id = ? AND user_uid = ?", id, UserUID).First(&article).Error
+	err := s.DB.Where("id = ? AND user_uid = ?", id, UserUID).Preload("Phrases").First(&article).Error
 	return &article, err
 }
 

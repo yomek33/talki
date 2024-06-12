@@ -12,6 +12,7 @@ import (
 	"github.com/yomek33/talki/internal/config"
 	"github.com/yomek33/talki/internal/gemini"
 	"github.com/yomek33/talki/internal/handler"
+	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/services"
 	"github.com/yomek33/talki/internal/stores"
 )
@@ -75,10 +76,15 @@ func main() {
 	h.SetDefault(e)
 	h.SetAPIRoutes(e)
 
-	// err = db.AutoMigrate(&models.Article{})
-	// if err != nil {
-	// 	panic("failed to migrate database")
-	// }
+	err = db.AutoMigrate(&models.Article{})
+	if err != nil {
+		panic("failed to migrate database")
+	}
+
+	err = db.AutoMigrate(&models.Phrase{})
+	if err != nil {
+		panic("failed to migrate database")
+	}
 
 	port, err := strconv.Atoi(cfg.Port)
 	if err != nil {

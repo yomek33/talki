@@ -7,8 +7,7 @@ import (
 type Phrase struct {
 	gorm.Model
 	ID         int  `gorm:"primaryKey"`
-	ArticleID  uint `gorm:"index"`
+	ArticleID  uint `gorm:"index;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Text       string
 	Importance string
-	Article    Article `gorm:"foreignKey:ArticleID"`
 }
