@@ -25,27 +25,27 @@ func getUserUIDByContext(c echo.Context) (string, error) {
 	return user, nil
 }
 
-func bindAndValidate(c echo.Context, article *models.Article) error {
-	if err := c.Bind(article); err != nil {
-		logger.Errorf("Error binding article: %v", err)
-		return errors.New(ErrInvalidArticleData)
+func bindAndValidate(c echo.Context, material *models.Material) error {
+	if err := c.Bind(material); err != nil {
+		logger.Errorf("Error binding material: %v", err)
+		return errors.New(ErrInvalidMaterialData)
 	}
-	if err := validateArticle(article); err != nil {
+	if err := validateMaterial(material); err != nil {
 		return err
 	}
 	return nil
 }
 
-func validateArticle(article *models.Article) error {
+func validateMaterial(material *models.Material) error {
 	validate := validator.New()
-	if err := validate.Struct(article); err != nil {
+	if err := validate.Struct(material); err != nil {
 		var errorMessages []string
 		for _, err := range err.(validator.ValidationErrors) {
 			errorMessage := fmt.Sprintf("Error in field '%s': %s", strings.ToLower(err.Field()), err.Tag())
 			errorMessages = append(errorMessages, errorMessage)
 
 		}
-		logger.Errorf("Error validating article: %v", errors.New(strings.Join(errorMessages, ", ")))
+		logger.Errorf("Error validating material: %v", errors.New(strings.Join(errorMessages, ", ")))
 		return errors.New(strings.Join(errorMessages, ", "))
 	}
 	return nil

@@ -11,43 +11,43 @@ import (
 )
 
 type PhraseService interface {
-	GeneratePhrases(ctx context.Context, articleID uint, UserUID string) ([]models.Phrase, error)
-	StorePhrases(articleID uint, phrases []models.Phrase) error
-	GetPhrasesByArticleID(articleID uint) ([]models.Phrase, error)
+	GeneratePhrases(ctx context.Context, materialID uint, UserUID string) ([]models.Phrase, error)
+	StorePhrases(materialID uint, phrases []models.Phrase) error
+	GetPhrasesByMaterialID(materialID uint) ([]models.Phrase, error)
 }
 
 type phraseService struct {
-	store          stores.PhraseStore
-	ArticleService *articleService
-	GeminiClient   *gemini.Client
+	store           stores.PhraseStore
+	MaterialService *materialService
+	GeminiClient    *gemini.Client
 }
 
 func (s *phraseService) StorePhrase(phrase *models.Phrase) error {
 	return s.store.CreatePhrase(phrase)
 }
 
-func (s *phraseService) GetPhrasesByArticleID(articleID uint) ([]models.Phrase, error) {
-	return s.store.GetPhrasesByArticleID(articleID)
+func (s *phraseService) GetPhrasesByMaterialID(materialID uint) ([]models.Phrase, error) {
+	return s.store.GetPhrasesByMaterialID(materialID)
 }
 
 func GeneratePhrases(topic string) ([]string, error) {
 	return []string{}, nil
 }
 
-func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, UserUID string) ([]models.Phrase, error) {
+func (s *phraseService) GeneratePhrases(ctx context.Context, materialID uint, UserUID string) ([]models.Phrase, error) {
 	// log.Println("Generating phrases")
 
-	// log.Println("ArticleID", articleID)
+	// log.Println("MaterialID", materialID)
 	// log.Println("UserUID", UserUID)
-	// article, err := s.ArticleService.GetArticleByID(articleID, UserUID)
-	// log.Println("Article", article)
+	// material, err := s.MaterialService.GetMaterialByID(materialID, UserUID)
+	// log.Println("Material", material)
 	// if err != nil {
-	// 	log.Printf("Failed to fetch article: %v", err)
-	// 	return nil, fmt.Errorf("failed to fetch article: %w", err)
+	// 	log.Printf("Failed to fetch material: %v", err)
+	// 	return nil, fmt.Errorf("failed to fetch material: %w", err)
 	// }
-	// if article == nil {
-	// 	log.Printf("Article is nil")
-	// 	return nil, fmt.Errorf("article is nil")
+	// if material == nil {
+	// 	log.Printf("Material is nil")
+	// 	return nil, fmt.Errorf("material is nil")
 	// }
 
 	// // Check if GeminiClient is nil
@@ -56,10 +56,10 @@ func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, Use
 	// 	return nil, fmt.Errorf("GeminiClient is nil")
 	// }
 
-	// log.Printf("Generating phrases for article %d", articleID)
+	// log.Printf("Generating phrases for material %d", materialID)
 
 	// // Generate phrases using GeminiClient
-	// phraseTexts, err := s.GeminiClient.GeneratePhrases(ctx, article.Content)
+	// phraseTexts, err := s.GeminiClient.GeneratePhrases(ctx, material.Content)
 	// if err != nil {
 	// 	log.Printf("Failed to generate phrases: %v", err)
 	// 	return nil, fmt.Errorf("failed to generate phrases: %w", err)
@@ -72,10 +72,10 @@ func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, Use
 	// var phrases []models.Phrase
 	// for _, phraseText := range phraseTexts {
 	// 	phrases = append(phrases, models.Phrase{
-	// 		ArticleID:  articleID,
+	// 		MaterialID:  materialID,
 	// 		Text:       phraseText,
 	// 		Importance: determineImportance(phraseText),
-	// 		Article:    *article,
+	// 		Material:    *material,
 	// 	})
 	// }
 
@@ -83,7 +83,7 @@ func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, Use
 	time.Sleep(5 * time.Second)
 	for i := range 10 {
 		phrases = append(phrases, models.Phrase{
-			ArticleID:  articleID,
+			MaterialID: materialID,
 			Text:       fmt.Sprintf("phrase %d", i),
 			Importance: "high",
 		})
@@ -91,7 +91,7 @@ func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, Use
 	return phrases, nil
 }
 
-func (s *phraseService) StorePhrases(articleID uint, phrases []models.Phrase) error {
+func (s *phraseService) StorePhrases(materialID uint, phrases []models.Phrase) error {
 	for _, phrase := range phrases {
 		if err := s.store.CreatePhrase(&phrase); err != nil {
 			return fmt.Errorf("failed to store phrase: %w", err)

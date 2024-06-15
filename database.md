@@ -1,10 +1,10 @@
 ```mermaid
 erDiagram
-USERS ||--o{ ARTICLES : writes
+USERS ||--o{ MATERIALS : writes
 USERS ||--o{ DIALOGUES : interacts
 USERS ||--o{ PROGRESS : tracks
-ARTICLES ||--o{ PHRASES : contains
-ARTICLES ||--o{ WORDS : contains
+MATERIALS ||--o{ PHRASES : contains
+MATERIALS ||--o{ WORDS : contains
 USERS {
 int id PK "User ID"
 string username "User Name"
@@ -12,22 +12,22 @@ string email "Email"
 string password_hash "Password Hash"
 datetime created_at "Account Created At"
 }
-ARTICLES {
-int id PK "Article ID"
+MATERIALS {
+int id PK "Material ID"
 int user_id FK "User ID"
-string title "Article Title"
+string title "Material Title"
 text content "Content"
 datetime created_at "Uploaded At"
 }
 PHRASES {
 int id PK "Phrase ID"
-int article_id FK "Article ID"
+int material_id FK "Material ID"
 string text "Extracted Phrase"
 string importance "Importance"
 }
 WORDS {
 int id PK "Words ID"
-int article_id FK "Article ID"
+int material_id FK "Material ID"
 string text "Words"
 string importance "Importance"
 string level "level"

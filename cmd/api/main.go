@@ -76,7 +76,7 @@ func main() {
 	h.SetDefault(e)
 	h.SetAPIRoutes(e)
 
-	err = db.AutoMigrate(&models.Article{})
+	err = db.AutoMigrate(&models.Material{})
 	if err != nil {
 		panic("failed to migrate database")
 	}

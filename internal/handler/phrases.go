@@ -25,16 +25,16 @@ type phraseHandler struct {
 }
 
 func (h *phraseHandler) GeneratePhrases(c echo.Context) error {
-	log.Printf("Generating phrases for article")
-	// Parse articleID and UserUID from the request
+	log.Printf("Generating phrases for material")
+	// Parse materialID and UserUID from the request
 	UserUID, err := getUserUIDByContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
 
-	articleID, err := strconv.Atoi(c.Param("articleID"))
+	materialID, err := strconv.Atoi(c.Param("materialID"))
 	if err != nil {
-		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidMaterialID)
 	}
 
 	// Create context with timeout
@@ -42,7 +42,7 @@ func (h *phraseHandler) GeneratePhrases(c echo.Context) error {
 	defer cancel()
 
 	// Call the service to generate phrases
-	phrases, err := h.PhraseService.GeneratePhrases(ctx, uint(articleID), UserUID)
+	phrases, err := h.PhraseService.GeneratePhrases(ctx, uint(materialID), UserUID)
 	if err != nil {
 		return respondWithError(c, http.StatusInternalServerError, ErrFailedGeneratePhrases)
 	}
@@ -52,12 +52,12 @@ func (h *phraseHandler) GeneratePhrases(c echo.Context) error {
 }
 
 func (h *phraseHandler) GetProcessedPhrases(c echo.Context) error {
-	articleID, err := parseUintParam(c, "id")
+	materialID, err := parseUintParam(c, "id")
 	if err != nil {
-		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidMaterialID)
 	}
 
-	phrases, err := h.PhraseService.GetPhrasesByArticleID(articleID)
+	phrases, err := h.PhraseService.GetPhrasesByMaterialID(materialID)
 	if err != nil {
 		return respondWithError(c, http.StatusInternalServerError, err.Error())
 	}

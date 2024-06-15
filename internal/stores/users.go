@@ -35,7 +35,7 @@ func (store *userStore) CreateUser(user *models.User) error {
 
 func (store *userStore) GetUserByID(UserUID string) (*models.User, error) {
 	var user models.User
-	err := store.DB.Where("id = ?", UserUID).Preload("Articles").First(&user).Error
+	err := store.DB.Where("id = ?", UserUID).Preload("Materials").First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -69,8 +69,8 @@ func (store *userStore) UpdateUser(user *models.User) error {
 
 func (store *userStore) DeleteUser(UserUID string) error {
 	return store.PerformDBTransaction(func(tx *gorm.DB) error {
-		// Delete the articles related to the user
-		if err := tx.Where("user_uid = ?", UserUID).Delete(&models.Article{}).Error; err != nil {
+		// Delete the materials related to the user
+		if err := tx.Where("user_uid = ?", UserUID).Delete(&models.Material{}).Error; err != nil {
 			return err
 		}
 		// Delete the user

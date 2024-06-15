@@ -5,18 +5,18 @@ import (
 )
 
 type Stores struct {
-	DB           *gorm.DB
-	UserStore    UserStore
-	ArticleStore ArticleStore
-	PhraseStore  PhraseStore
+	DB            *gorm.DB
+	UserStore     UserStore
+	MaterialStore MaterialStore
+	PhraseStore   PhraseStore
 }
 
 func NewStores(db *gorm.DB) *Stores {
 	return &Stores{
-		DB:           db,
-		UserStore:    &userStore{BaseStore{DB: db}},
-		ArticleStore: &articleStore{BaseStore{DB: db}},
-		PhraseStore:  &phraseStore{BaseStore{DB: db}},
+		DB:            db,
+		UserStore:     &userStore{BaseStore{DB: db}},
+		MaterialStore: &materialStore{BaseStore{DB: db}},
+		PhraseStore:   &phraseStore{BaseStore{DB: db}},
 	}
 }
 

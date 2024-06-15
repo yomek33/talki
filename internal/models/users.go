@@ -8,9 +8,9 @@ import (
 
 type User struct {
 	gorm.Model
-	Name     string    `gorm:"type:varchar(255)" json:"name" validate:"required"`
-	UserUID  string    `gorm:"type:varchar(255)" json:"user_uid" `
-	Articles []Article `gorm:"foreignKey:UserUID;references:UserUID"`
+	Name      string     `gorm:"type:varchar(255)" json:"name" validate:"required"`
+	UserUID   string     `gorm:"type:varchar(255)" json:"user_uid" `
+	Materials []Material `gorm:"foreignKey:UserUID;references:UserUID"`
 }
 
 type Dialogue struct {

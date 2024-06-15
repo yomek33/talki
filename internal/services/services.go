@@ -6,17 +6,17 @@ import (
 )
 
 type Services struct {
-	UserService    *userService
-	ArticleService *articleService
-	PhraseService  *phraseService
-	GeminiClient   *gemini.Client
+	UserService     *userService
+	MaterialService *materialService
+	PhraseService   *phraseService
+	GeminiClient    *gemini.Client
 }
 
 func NewServices(s *stores.Stores, geminiClient *gemini.Client) *Services {
 	return &Services{
-		UserService:    &userService{store: s.UserStore},
-		ArticleService: &articleService{store: s.ArticleStore},
-		PhraseService:  &phraseService{store: s.PhraseStore, ArticleService: &articleService{store: s.ArticleStore}, GeminiClient: geminiClient},
-		GeminiClient:   geminiClient,
+		UserService:     &userService{store: s.UserStore},
+		MaterialService: &materialService{store: s.MaterialStore},
+		PhraseService:   &phraseService{store: s.PhraseStore, MaterialService: &materialService{store: s.MaterialStore}, GeminiClient: geminiClient},
+		GeminiClient:    geminiClient,
 	}
 }

@@ -13,7 +13,7 @@ const frontendURI = "http://localhost:5173"
 
 type Handlers struct {
 	UserHandler
-	ArticleHandler
+	MaterialHandler
 	PhraseHandler
 	jwtSecretKey string
 	Firebase     *Firebase
@@ -21,11 +21,11 @@ type Handlers struct {
 
 func NewHandler(s *services.Services, jwtSecretKey string, firebase *Firebase) *Handlers {
 	return &Handlers{
-		UserHandler:    &userHandler{UserService: s.UserService, jwtSecretKey: jwtSecretKey, Firebase: firebase},
-		ArticleHandler: &articleHandler{ArticleService: s.ArticleService, PhraseService: s.PhraseService},
-		PhraseHandler:  &phraseHandler{PhraseService: s.PhraseService},
-		jwtSecretKey:   jwtSecretKey,
-		Firebase:       firebase,
+		UserHandler:     &userHandler{UserService: s.UserService, jwtSecretKey: jwtSecretKey, Firebase: firebase},
+		MaterialHandler: &materialHandler{MaterialService: s.MaterialService, PhraseService: s.PhraseService},
+		PhraseHandler:   &phraseHandler{PhraseService: s.PhraseService},
+		jwtSecretKey:    jwtSecretKey,
+		Firebase:        firebase,
 	}
 }
 
@@ -42,14 +42,14 @@ func (h *Handlers) SetAPIRoutes(e *echo.Echo) {
 	api.OPTIONS("/auth", handleOptions)
 	api.POST("/auth", h.GetGoogleLoginSignin)
 
-	articleRoutes := api.Group("/articles")
-	articleRoutes.POST("", h.CreateArticle)
-	articleRoutes.GET("", h.GetAllArticles)
-	articleRoutes.GET("/:id", h.GetArticleByID)
-	articleRoutes.PUT("/:id", h.UpdateArticle)
-	articleRoutes.DELETE("/:id", h.DeleteArticle)
-	articleRoutes.GET("/:id/status", h.CheckArticleStatus)
-	articleRoutes.GET("/:id/phrases", h.GetProcessedPhrases)
+	materialRoutes := api.Group("/materials")
+	materialRoutes.POST("", h.CreateMaterial)
+	materialRoutes.GET("", h.GetAllMaterials)
+	materialRoutes.GET("/:id", h.GetMaterialByID)
+	materialRoutes.PUT("/:id", h.UpdateMaterial)
+	materialRoutes.DELETE("/:id", h.DeleteMaterial)
+	materialRoutes.GET("/:id/status", h.CheckMaterialStatus)
+	materialRoutes.GET("/:id/phrases", h.GetProcessedPhrases)
 
 	userRoutes := api.Group("/users")
 	userRoutes.PUT("/:id", h.UpdateUser)
