@@ -26,7 +26,7 @@ type application struct {
 func main() {
 	// Initialize Echo
 	e := handler.Echo()
-
+	e.Validator = handler.NewValidator()
 	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {

@@ -17,6 +17,7 @@ const (
 
 type PhraseHandler interface {
 	GeneratePhrases(c echo.Context) error
+	GetProcessedPhrases(c echo.Context) error
 }
 
 type phraseHandler struct {
@@ -47,5 +48,19 @@ func (h *phraseHandler) GeneratePhrases(c echo.Context) error {
 	}
 
 	// Return the phrases as JSON response
+	return c.JSON(http.StatusOK, phrases)
+}
+
+func (h *phraseHandler) GetProcessedPhrases(c echo.Context) error {
+	articleID, err := parseUintParam(c, "id")
+	if err != nil {
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
+	}
+
+	phrases, err := h.PhraseService.GetPhrasesByArticleID(articleID)
+	if err != nil {
+		return respondWithError(c, http.StatusInternalServerError, err.Error())
+	}
+
 	return c.JSON(http.StatusOK, phrases)
 }

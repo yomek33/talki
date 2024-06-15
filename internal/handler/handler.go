@@ -6,7 +6,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
 	"github.com/yomek33/talki/internal/services"
 )
 
@@ -39,23 +38,22 @@ func (h *Handlers) SetDefault(e *echo.Echo) {
 func (h *Handlers) SetAPIRoutes(e *echo.Echo) {
 	api := e.Group("/api")
 
+	// Handle OPTIONS request for CORS preflight
 	api.OPTIONS("/auth", handleOptions)
 	api.POST("/auth", h.GetGoogleLoginSignin)
 
-	r := api.Group("")
+	articleRoutes := api.Group("/articles")
+	articleRoutes.POST("", h.CreateArticle)
+	articleRoutes.GET("", h.GetAllArticles)
+	articleRoutes.GET("/:id", h.GetArticleByID)
+	articleRoutes.PUT("/:id", h.UpdateArticle)
+	articleRoutes.DELETE("/:id", h.DeleteArticle)
+	articleRoutes.GET("/:id/status", h.CheckArticleStatus)
+	articleRoutes.GET("/:id/phrases", h.GetProcessedPhrases)
 
-	r.POST("/articles", h.CreateArticle)
-	r.GET("/articles", h.GetAllArticles)
-	r.GET("/articles/:id", h.GetArticleByID)
-	r.PUT("/articles/:id", h.UpdateArticle)
-	r.DELETE("/articles/:id", h.DeleteArticle)
-	r.POST("/articles", h.CreateArticle)
-	r.GET("/articles/:id/status", h.CheckArticleStatus)
-	r.GET("/articles/:id/phrases", h.GetProcessedPhrases)
-
-	//r.GET("/users/:id", h.GetUserByID) TODO: GetUserByUserUID
-	r.PUT("/users/:id", h.UpdateUser) //TODO: change to /users/:UserUID
-	r.DELETE("/users/:id", h.DeleteUser)
+	userRoutes := api.Group("/users")
+	userRoutes.PUT("/:id", h.UpdateUser)
+	userRoutes.DELETE("/:id", h.DeleteUser)
 }
 
 func handleOptions(c echo.Context) error {
@@ -65,14 +63,15 @@ func handleOptions(c echo.Context) error {
 
 func Echo() *echo.Echo {
 	e := echo.New()
-	e.Logger.SetLevel(log.INFO)
 
+	// Set up middleware
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "${time_rfc3339} ${method} ${uri} ${status} ${latency_human}\n",
 	}))
 	e.Use(middleware.Recover())
 	e.Pre(middleware.RemoveTrailingSlash())
 
+	// Configure CORS settings
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{frontendURI},
 		AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS},
@@ -82,24 +81,28 @@ func Echo() *echo.Echo {
 
 	e.Use(middleware.Secure())
 
+	// Custom HTTP error handler
 	e.HTTPErrorHandler = customHTTPErrorHandler
 
 	return e
 }
 
-func respondWithError(c echo.Context, code int, message string) error {
-	return c.JSON(code, map[string]string{"error": message})
-}
-
 func customHTTPErrorHandler(err error, c echo.Context) {
-	var code = http.StatusInternalServerError
-	var message interface{} = echo.Map{"message": "Internal Server Error"}
+	code := http.StatusInternalServerError
+	message := echo.Map{"message": "Internal Server Error"}
 
 	if he, ok := err.(*echo.HTTPError); ok {
 		code = he.Code
-		message = he.Message
+		if message, ok = he.Message.(echo.Map); !ok {
+			// he.Message was not of type echo.Map
+			if messageStr, ok := he.Message.(string); ok {
+				message = echo.Map{"message": messageStr}
+			} else {
+				message = echo.Map{"message": http.StatusText(code)}
+			}
+		}
 		if he.Internal != nil {
-			message = fmt.Sprintf("%v, %v", err, he.Internal)
+			message = echo.Map{"message": fmt.Sprintf("%v, %v", message, he.Internal)}
 		}
 	}
 
@@ -108,7 +111,7 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 
 	// Send JSON response
 	if !c.Response().Committed {
-		if c.Request().Method == http.MethodHead { // Issue #608
+		if c.Request().Method == http.MethodHead {
 			c.NoContent(code)
 		} else {
 			c.JSON(code, message)
@@ -121,8 +124,4 @@ func setCORSHeaders(c echo.Context) {
 	c.Response().Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	c.Response().Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	c.Response().Header().Set("Access-Control-Allow-Credentials", "true")
-}
-
-func (h *userHandler) logError(err error, msg string) {
-	log.Printf("[ERROR] %s: %v\n", msg, err)
 }
