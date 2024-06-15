@@ -49,9 +49,12 @@ func (h *Handlers) SetAPIRoutes(e *echo.Echo) {
 	r.GET("/articles/:id", h.GetArticleByID)
 	r.PUT("/articles/:id", h.UpdateArticle)
 	r.DELETE("/articles/:id", h.DeleteArticle)
+	r.POST("/articles", h.CreateArticle)
+	r.GET("/articles/:id/status", h.CheckArticleStatus)
+	r.GET("/articles/:id/phrases", h.GetProcessedPhrases)
 
 	//r.GET("/users/:id", h.GetUserByID) TODO: GetUserByUserUID
-	r.PUT("/users/:id", h.UpdateUser) //TODO: change to /users/:google_user_id
+	r.PUT("/users/:id", h.UpdateUser) //TODO: change to /users/:UserUID
 	r.DELETE("/users/:id", h.DeleteUser)
 }
 

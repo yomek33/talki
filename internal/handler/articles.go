@@ -35,6 +35,8 @@ type ArticleHandler interface {
 	UpdateArticle(c echo.Context) error
 	DeleteArticle(c echo.Context) error
 	GetAllArticles(c echo.Context) error
+	CheckArticleStatus(c echo.Context) error
+	GetProcessedPhrases(c echo.Context) error
 }
 
 // articleHandler is the concrete implementation of ArticleHandler.
@@ -70,77 +72,77 @@ func (h *articleHandler) CreateArticle(c echo.Context) error {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
 	article.UserUID = UserUID
+	article.Status = "processing"
 
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
 	defer cancel()
 
-	resultChan := make(chan error, 1)
-	go func() {
-		id, err := h.ArticleService.CreateArticle(&article)
-		if err != nil {
-			log.Printf("Error creating article: %v\n", err)
-			resultChan <- err
-			return
-		}
-		article.ID = id
-		resultChan <- nil
-	}()
+	id, err := h.ArticleService.CreateArticle(&article)
+	if err != nil {
+		log.Printf("Error creating article: %v\n", err)
+		return respondWithError(c, http.StatusInternalServerError, ErrFailedCreateArticle)
+	}
+	article.ID = id
 
-	select {
-	case <-ctx.Done():
-		return respondWithError(c, http.StatusGatewayTimeout, "request timed out while creating article")
-	case err := <-resultChan:
-		if err != nil {
-			return respondWithError(c, http.StatusInternalServerError, ErrFailedCreateArticle)
-		}
+	go h.processArticleAsync(ctx, article.ID, UserUID)
+
+	return c.JSON(http.StatusCreated, map[string]interface{}{
+		"message": "Article created successfully",
+		"id":      article.ID,
+	})
+}
+
+func (h *articleHandler) processArticleAsync(ctx context.Context, articleID uint, userUID string) {
+	h.ArticleService.UpdateArticleStatus(articleID, "processing")
+
+	phrases, err := h.PhraseService.GeneratePhrases(ctx, articleID, userUID)
+	if err != nil {
+		log.Printf("Failed to generate phrases: %v\n", err)
+		h.ArticleService.UpdateArticleStatus(articleID, "failed")
+		return
 	}
 
-	var phrases []models.Phrase
-	phraseErrChan := make(chan error, 1)
-	phrasesChan := make(chan []models.Phrase, 1)
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("Recovered from panic: %v\n", r)
-				phraseErrChan <- fmt.Errorf("panic occurred: %v", r)
-			}
-		}()
-
-		phrases, err = h.PhraseService.GeneratePhrases(ctx, article.ID, UserUID)
-		if err != nil {
-			log.Printf("Failed to generate phrases: %v\n", err)
-			phraseErrChan <- err
-			return
-		}
-		if phrases == nil {
-			log.Printf("Generated phrases are nil")
-			phraseErrChan <- fmt.Errorf("generated phrases are nil")
-			return
-		}
-
-		err = h.PhraseService.StorePhrases(article.ID, phrases)
-		if err != nil {
-			log.Printf("Failed to store phrases: %v\n", err)
-			phraseErrChan <- err
-			return
-		}
-		phraseErrChan <- nil
-		phrasesChan <- phrases
-	}()
-
-	log.Println("Waiting for phrases to be generated and stored")
-	log.Println("send phrases to the client", phrases)
-
-	phrase := <-phrasesChan
-	if err := <-phraseErrChan; err != nil {
-		return respondWithError(c, http.StatusInternalServerError, ErrFailedGeneratePhrases)
+	if err = h.PhraseService.StorePhrases(articleID, phrases); err != nil {
+		log.Printf("Failed to store phrases: %v\n", err)
+		h.ArticleService.UpdateArticleStatus(articleID, "failed")
+		return
 	}
-	return c.JSON(http.StatusCreated, phrase)
+
+	log.Printf("Phrases generated and stored successfully for article ID: %d\n", articleID)
+	h.ArticleService.UpdateArticleStatus(articleID, "completed")
+}
+
+func (h *articleHandler) CheckArticleStatus(c echo.Context) error {
+	articleIDStr := c.Param("id")
+	articleIDUint64, err := strconv.ParseUint(articleIDStr, 10, 64)
+	articleID := uint(articleIDUint64)
+	if err != nil {
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleID)
+	}
+	status, err := h.ArticleService.GetArticleStatus(articleID)
+	if err != nil {
+		return respondWithError(c, http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"status": status})
+}
+
+func (h *articleHandler) GetProcessedPhrases(c echo.Context) error {
+	articleIDStr := c.Param("id")
+	articleIDUint64, err := strconv.ParseUint(articleIDStr, 10, 64)
+	articleID := uint(articleIDUint64)
+	phrases, err := h.PhraseService.GetPhrasesByArticleID(articleID)
+	if err != nil {
+		return respondWithError(c, http.StatusInternalServerError, err.Error())
+	}
+
+	log.Printf("Phrases: %v\n", phrases)
+	return c.JSON(http.StatusOK, phrases)
 }
 
 func bindAndValidateArticle(c echo.Context, article *models.Article) error {
 	if err := c.Bind(article); err != nil {
-		return fmt.Errorf("%w: %v", ErrInvalidArticleData, err)
+		return respondWithError(c, http.StatusBadRequest, ErrInvalidArticleData)
 	}
 	if err := validateArticle(article); err != nil {
 		return err

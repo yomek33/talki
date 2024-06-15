@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/yomek33/talki/internal/gemini"
 	"github.com/yomek33/talki/internal/models"
@@ -12,6 +13,7 @@ import (
 type PhraseService interface {
 	GeneratePhrases(ctx context.Context, articleID uint, UserUID string) ([]models.Phrase, error)
 	StorePhrases(articleID uint, phrases []models.Phrase) error
+	GetPhrasesByArticleID(articleID uint) ([]models.Phrase, error)
 }
 
 type phraseService struct {
@@ -78,6 +80,7 @@ func (s *phraseService) GeneratePhrases(ctx context.Context, articleID uint, Use
 	// }
 
 	var phrases []models.Phrase
+	time.Sleep(5 * time.Second)
 	for i := range 10 {
 		phrases = append(phrases, models.Phrase{
 			ArticleID:  articleID,

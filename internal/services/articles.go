@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/stores"
@@ -14,10 +15,13 @@ type ArticleService interface {
 	UpdateArticle(id uint, article *models.Article) error
 	DeleteArticle(id uint, UserUID string) error
 	GetAllArticles(searchQuery string, UserUID string) ([]models.Article, error)
+	UpdateArticleStatus(id uint, status string) error
+	GetArticleStatus(id uint) (string, error)
 }
 
 type articleService struct {
 	store stores.ArticleStore
+	mu    sync.Mutex
 }
 
 var (
@@ -56,4 +60,16 @@ func (s *articleService) DeleteArticle(id uint, UserUID string) error {
 
 func (s *articleService) GetAllArticles(searchQuery string, UserUID string) ([]models.Article, error) {
 	return s.store.GetAllArticles(searchQuery, UserUID)
+}
+
+func (s *articleService) UpdateArticleStatus(id uint, status string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.store.UpdateArticleStatus(id, status)
+}
+
+func (s *articleService) GetArticleStatus(id uint) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.store.GetArticleStatus(id)
 }

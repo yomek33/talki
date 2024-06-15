@@ -19,6 +19,8 @@ type ArticleStore interface {
 	UpdateArticle(id uint, article *models.Article) error
 	DeleteArticle(id uint, UserUID string) error
 	GetAllArticles(searchQuery string, UserUID string) ([]models.Article, error)
+	UpdateArticleStatus(id uint, status string) error
+	GetArticleStatus(id uint) (string, error)
 }
 
 type articleStore struct {
@@ -71,4 +73,19 @@ func (s *articleStore) GetAllArticles(searchQuery string, UserUID string) ([]mod
 	}
 	err := query.Find(&articles).Error
 	return articles, err
+}
+
+func (s *articleStore) UpdateArticleStatus(id uint, status string) error {
+	if status != models.StatusProcessing && status != models.StatusCompleted && status != models.StatusFailed {
+		return errors.New("invalid status")
+	}
+	return s.PerformDBTransaction(func(tx *gorm.DB) error {
+		return tx.Model(&models.Article{}).Where("id = ?", id).Update("status", status).Error
+	})
+}
+
+func (s *articleStore) GetArticleStatus(id uint) (string, error) {
+	var article models.Article
+	err := s.DB.Select("status").Where("id = ?", id).First(&article).Error
+	return article.Status, err
 }
