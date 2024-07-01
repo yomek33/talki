@@ -72,15 +72,14 @@ func (s *phraseService) GeneratePhrases(ctx context.Context, materialID uint, Us
 	// var phrases []models.Phrase
 	// for _, phraseText := range phraseTexts {
 	// 	phrases = append(phrases, models.Phrase{
-	// 		MaterialID:  materialID,
+	// 		MaterialID: materialID,
 	// 		Text:       phraseText,
 	// 		Importance: determineImportance(phraseText),
-	// 		Material:    *material,
 	// 	})
 	// }
 
 	var phrases []models.Phrase
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 	for i := range 10 {
 		phrases = append(phrases, models.Phrase{
 			MaterialID: materialID,

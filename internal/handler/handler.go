@@ -15,6 +15,7 @@ type Handlers struct {
 	UserHandler
 	MaterialHandler
 	PhraseHandler
+	ChatHandler
 	jwtSecretKey string
 	Firebase     *Firebase
 }
@@ -24,6 +25,7 @@ func NewHandler(s *services.Services, jwtSecretKey string, firebase *Firebase) *
 		UserHandler:     &userHandler{UserService: s.UserService, jwtSecretKey: jwtSecretKey, Firebase: firebase},
 		MaterialHandler: &materialHandler{MaterialService: s.MaterialService, PhraseService: s.PhraseService},
 		PhraseHandler:   &phraseHandler{PhraseService: s.PhraseService},
+		ChatHandler:     &chatHandler{ChatService: s.ChatService},
 		jwtSecretKey:    jwtSecretKey,
 		Firebase:        firebase,
 	}
@@ -54,6 +56,12 @@ func (h *Handlers) SetAPIRoutes(e *echo.Echo) {
 	userRoutes := api.Group("/users")
 	userRoutes.PUT("/:id", h.UpdateUser)
 	userRoutes.DELETE("/:id", h.DeleteUser)
+
+	chatRoutes := api.Group("/chat")
+	chatRoutes.POST("", h.CreateChat)
+	chatRoutes.GET("/:id", h.GetChat)
+	chatRoutes.POST("/:id/messages", h.CreateMessage)
+	chatRoutes.GET("/:id/messages", h.GetMessages)
 }
 
 func handleOptions(c echo.Context) error {
