@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/yomek33/talki/internal/logger"
@@ -9,60 +10,122 @@ import (
 	"github.com/yomek33/talki/internal/services"
 )
 
+// ChatHandler defines the interface for chat-related operations
 type ChatHandler interface {
 	CreateChat(c echo.Context) error
-	GetChatByID(c echo.Context) error
+	GetChatByMaterialID(c echo.Context) error
+	GetChatByChatID(c echo.Context) error
+	ChatWithGemini(c echo.Context) error
 }
 
+// chatHandler implements the ChatHandler interface
 type chatHandler struct {
-	ChatService services.ChatService
+	chatService    services.ChatService
+	messageService services.MessageService
 }
 
+// NewChatHandler creates a new instance of chatHandler
+func NewChatHandler(cs services.ChatService, ms services.MessageService) ChatHandler {
+	return &chatHandler{
+		chatService:    cs,
+		messageService: ms,
+	}
+}
+
+// CreateChat handles the creation of a new chat
 func (h *chatHandler) CreateChat(c echo.Context) error {
+	userUID, err := getUserUIDFromContext(c)
+	if err != nil {
+		return respondWithError(c, http.StatusUnauthorized, "Invalid user token")
+	}
+
 	var chat models.Chat
-	if err := c.Bind(chat); err != nil {
+	if err := c.Bind(&chat); err != nil {
 		logger.Errorf("Error binding chat data: %v", err)
 		return respondWithError(c, http.StatusBadRequest, "Invalid chat data")
 	}
-	if err := h.ChatService.CreateChat(chat); err != nil {
+
+	chat.UserUID = userUID
+	chat.CreatedAt = time.Now()
+
+	createdChat, err := h.chatService.CreateChat(&chat)
+	if err != nil {
 		logger.Errorf("Error creating chat: %v", err)
 		return respondWithError(c, http.StatusInternalServerError, "Could not create chat")
 	}
+
 	logger.Infof("Chat created successfully")
-	return c.JSON(http.StatusCreated, chat)
+	return c.JSON(http.StatusCreated, createdChat)
+
 }
 
-func (h *chatHandler) GetChatByID(c echo.Context) error {
-	id := c.Param("id")
-	var chat models.Chat
-	if err := h.ChatService.GetChatByID(id, &chat); err != nil {
+func (h *chatHandler) GetChatByMaterialID(c echo.Context) error {
+	materialID, err := parseUintParam(c, "id")
+	if err != nil {
+		return respondWithError(c, http.StatusBadRequest, "Invalid material ID")
+	}
+
+	userUID, err := getUserUIDFromContext(c)
+	if err != nil {
+		return respondWithError(c, http.StatusUnauthorized, "Invalid user token")
+	}
+
+	chat, err := h.chatService.GetChatByMaterialID(materialID, userUID)
+	if err != nil {
 		logger.Errorf("Chat room not found: %v", err)
 		return respondWithError(c, http.StatusNotFound, "Chat room not found")
 	}
+
 	logger.Infof("Chat retrieved successfully")
 	return c.JSON(http.StatusOK, chat)
 }
 
-// POST /chats/:id/messages
-func (h *Handlers) CreateMessage(c echo.Context) error {
-	chatID := c.Param("id")
-	var message models.Message
-	if err := c.Bind(message); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+// GetChatByChatID retrieves a chat by its ID
+func (h *chatHandler) GetChatByChatID(c echo.Context) error {
+	id, err := parseUintParam(c, "id")
+	if err != nil {
+		return respondWithError(c, http.StatusBadRequest, "Invalid chat ID")
 	}
-	message.chatID = chatID
-	if err := h.DB.Create(&message).Error; err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+
+	userUID, err := getUserUIDFromContext(c)
+	if err != nil {
+		return respondWithError(c, http.StatusUnauthorized, "Invalid user token")
 	}
-	return c.JSON(http.StatusOK, message)
+
+	chat, err := h.chatService.GetChatByChatID(id, userUID)
+	if err != nil {
+		logger.Errorf("Chat room not found: %v", err)
+		return respondWithError(c, http.StatusNotFound, "Chat room not found")
+	}
+
+	logger.Infof("Chat retrieved successfully")
+	return c.JSON(http.StatusOK, chat)
 }
 
-// GET /chats/:id/messages
-func (h *Handlers) GetMessages(c echo.Context) error {
-	chatID := c.Param("id")
-	var messages []models.Message
-	if err := h.DB.Where("chat_room_id = ?", chatID).Find(&messages).Error; err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+// ChatWithGemini handles communication with the Gemini API
+func (h *chatHandler) ChatWithGemini(c echo.Context) error {
+	chatID, err := parseUintParam(c, "chatId")
+	if err != nil {
+		return respondWithError(c, http.StatusBadRequest, "Invalid chat ID")
 	}
-	return c.JSON(http.StatusOK, messages)
+
+	userUID, err := getUserUIDFromContext(c)
+	if err != nil {
+		return respondWithError(c, http.StatusUnauthorized, "Invalid user token")
+	}
+
+	var request struct {
+		Content string `json:"content"`
+	}
+	if err := c.Bind(&request); err != nil {
+		return respondWithError(c, http.StatusBadRequest, "Invalid request data")
+	}
+
+	response, err := h.messageService.SendMessageToGemini(chatID, request.Content, userUID)
+	if err != nil {
+		logger.Errorf("Error communicating with Gemini API: %v", err)
+		return respondWithError(c, http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"response": response})
 }

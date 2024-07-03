@@ -10,6 +10,7 @@ type Stores struct {
 	MaterialStore MaterialStore
 	PhraseStore   PhraseStore
 	ChatStore     ChatStore
+	MessageStore  MessageStore
 }
 
 func NewStores(db *gorm.DB) *Stores {
@@ -19,6 +20,7 @@ func NewStores(db *gorm.DB) *Stores {
 		MaterialStore: &materialStore{BaseStore{DB: db}},
 		PhraseStore:   &phraseStore{BaseStore{DB: db}},
 		ChatStore:     &chatStore{BaseStore{DB: db}},
+		MessageStore:  &messageStore{BaseStore{DB: db}},
 	}
 }
 

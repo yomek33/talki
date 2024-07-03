@@ -16,7 +16,7 @@ func respondWithError(c echo.Context, code int, message string) error {
 	return c.JSON(code, map[string]string{"error": message})
 }
 
-func getUserUIDByContext(c echo.Context) (string, error) {
+func getUserUIDFromContext(c echo.Context) (string, error) {
 	user, ok := c.Get("userUID").(string)
 	if !ok || user == "" {
 		logger.Errorf("Invalid user token")
@@ -25,7 +25,7 @@ func getUserUIDByContext(c echo.Context) (string, error) {
 	return user, nil
 }
 
-func bindAndValidate(c echo.Context, material *models.Material) error {
+func bindAndValidateMaterial(c echo.Context, material *models.Material) error {
 	if err := c.Bind(material); err != nil {
 		logger.Errorf("Error binding material: %v", err)
 		return errors.New(ErrInvalidMaterialData)

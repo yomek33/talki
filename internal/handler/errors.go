@@ -20,4 +20,8 @@ const (
 	ErrFailedRetrieveMaterials = "failed to retrieve materials"
 	ErrFailedCreateMaterial    = "failed to create material"
 	ErrMaterialNotFound        = "material not found"
+
+	ErrFailedCreateChat = "failed to create chat"
+	ErrInvalidChatID    = "invalid chat ID"
+	ErrGeminiAPI        = "error communicating with Gemini API"
 )

@@ -85,10 +85,15 @@ func main() {
 	if err != nil {
 		panic("failed to migrate database")
 	}
-	err = db.AutoMigrate(&models.User{})
+	err = db.AutoMigrate(&models.Message{})
 	if err != nil {
 		panic("failed to migrate database")
 	}
+	err = db.AutoMigrate(&models.Chat{})
+	if err != nil {
+		panic("failed to migrate database")
+	}
+
 	port, err := strconv.Atoi(cfg.Port)
 	if err != nil {
 		log.Fatalf("Invalid port number: %v", err)

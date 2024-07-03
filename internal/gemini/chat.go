@@ -3,12 +3,14 @@ package gemini
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/google/generative-ai-go/genai"
 	"github.com/yomek33/talki/internal/models"
 )
 
-func (c *Client) SendMessageToGemini(ctx context.Context, chat *models.Chat, content string) ([]string, error) {
+// SendMessageToGemini sends a message to the Gemini model and returns the response
+func (c *Client) SendMessageToGemini(ctx context.Context, chat *models.Chat, content string) (string, error) {
 	geminiModel := c.client.GenerativeModel("gemini-1.5-flash")
 	cs := geminiModel.StartChat()
 
@@ -26,6 +28,7 @@ func (c *Client) SendMessageToGemini(ctx context.Context, chat *models.Chat, con
 		})
 	}
 
+	// Append the current user message
 	cs.History = append(cs.History, &genai.Content{
 		Parts: []genai.Part{
 			genai.Text(content),
@@ -33,21 +36,40 @@ func (c *Client) SendMessageToGemini(ctx context.Context, chat *models.Chat, con
 		Role: "user",
 	})
 
+	// Send the message to Gemini
 	resp, err := cs.SendMessage(ctx, genai.Text(content))
 	if err != nil {
-		return nil, err
+		log.Printf("Error sending message to Gemini: %v", err)
+		return "", fmt.Errorf("error sending message to Gemini: %w", err)
 	}
-	return printResponse(resp), nil
+
+	// Validate response
+	if resp.Candidates == nil || len(resp.Candidates) == 0 {
+		return "", fmt.Errorf("no candidates in response")
+	}
+
+	if resp.Candidates[0].Content == nil || len(resp.Candidates[0].Content.Parts) == 0 {
+		return "", fmt.Errorf("no content in response")
+	}
+
+	// Type assertion with check
+	part, ok := resp.Candidates[0].Content.Parts[0].(genai.Text)
+	if !ok {
+		return "", fmt.Errorf("unexpected content type in response")
+	}
+
+	// Print response for debugging
+	printResponse(resp)
+
+	return string(part), nil
 }
 
-func printResponse(resp *genai.GenerateContentResponse) []string {
-	var meassages []string
+func printResponse(resp *genai.GenerateContentResponse) {
 	for _, cand := range resp.Candidates {
 		if cand.Content != nil {
 			for _, part := range cand.Content.Parts {
-				meassages = append(meassages, fmt.Sprintf("%v", part))
+				fmt.Printf("Part: %v\n", part)
 			}
 		}
 	}
-	return meassages
 }

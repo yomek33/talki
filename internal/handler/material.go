@@ -34,11 +34,11 @@ func NewMaterialHandler(materialService services.MaterialService, phraseService 
 
 func (h *materialHandler) CreateMaterial(c echo.Context) error {
 	var material models.Material
-	if err := bindAndValidate(c, &material); err != nil {
+	if err := bindAndValidateMaterial(c, &material); err != nil {
 		return respondWithError(c, http.StatusBadRequest, err.Error())
 	}
 
-	UserUID, err := getUserUIDByContext(c)
+	UserUID, err := getUserUIDFromContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
@@ -71,7 +71,7 @@ func (h *materialHandler) GetMaterialByID(c echo.Context) error {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidMaterialID)
 	}
 
-	UserUID, err := getUserUIDByContext(c)
+	UserUID, err := getUserUIDFromContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
@@ -86,7 +86,7 @@ func (h *materialHandler) GetMaterialByID(c echo.Context) error {
 }
 
 func (h *materialHandler) UpdateMaterial(c echo.Context) error {
-	UserUID, err := getUserUIDByContext(c)
+	UserUID, err := getUserUIDFromContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
@@ -101,7 +101,7 @@ func (h *materialHandler) UpdateMaterial(c echo.Context) error {
 		return respondWithError(c, http.StatusNotFound, ErrMaterialNotFound)
 	}
 
-	if err := bindAndValidate(c, material); err != nil {
+	if err := bindAndValidateMaterial(c, material); err != nil {
 		return respondWithError(c, http.StatusBadRequest, err.Error())
 	}
 
@@ -124,7 +124,7 @@ func (h *materialHandler) DeleteMaterial(c echo.Context) error {
 		return respondWithError(c, http.StatusBadRequest, ErrInvalidID)
 	}
 
-	UserUID, err := getUserUIDByContext(c)
+	UserUID, err := getUserUIDFromContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}
@@ -141,7 +141,7 @@ func (h *materialHandler) DeleteMaterial(c echo.Context) error {
 func (h *materialHandler) GetAllMaterials(c echo.Context) error {
 	searchQuery := c.QueryParam("search")
 
-	UserUID, err := getUserUIDByContext(c)
+	UserUID, err := getUserUIDFromContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}

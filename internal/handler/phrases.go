@@ -27,7 +27,7 @@ type phraseHandler struct {
 func (h *phraseHandler) GeneratePhrases(c echo.Context) error {
 	log.Printf("Generating phrases for material")
 	// Parse materialID and UserUID from the request
-	UserUID, err := getUserUIDByContext(c)
+	UserUID, err := getUserUIDFromContext(c)
 	if err != nil {
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
 	}

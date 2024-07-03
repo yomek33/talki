@@ -30,17 +30,14 @@ func TestSendMessageToGemini(t *testing.T) {
 	chat := &models.Chat{
 		Detail: "Example Chat",
 		Messages: []models.Message{
-			{Content: "Hello, my job is a software engineer", SenderType: "user"},
-			{Content: "you are a software engineer!", SenderType: "bot"},
+			{Content: "こんにちは。私は広島に住んでいるので聞いてください", SenderType: "user"},
+			{Content: "こんにちは!あなたは広島に住んでいるのですね", SenderType: "bot"},
 		},
 	}
 
-	response, err := client.SendMessageToGemini(ctx, chat, "what is my job?")
+	response, err := client.SendMessageToGemini(ctx, chat, "私に何を聞きたいですか")
 	fmt.Println(response)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, response)
 
-	for _, msg := range response {
-		t.Log(msg)
-	}
 }

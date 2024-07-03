@@ -16,6 +16,7 @@ type Handlers struct {
 	MaterialHandler
 	PhraseHandler
 	ChatHandler
+	MessageHandler
 	jwtSecretKey string
 	Firebase     *Firebase
 }
@@ -25,7 +26,8 @@ func NewHandler(s *services.Services, jwtSecretKey string, firebase *Firebase) *
 		UserHandler:     &userHandler{UserService: s.UserService, jwtSecretKey: jwtSecretKey, Firebase: firebase},
 		MaterialHandler: &materialHandler{MaterialService: s.MaterialService, PhraseService: s.PhraseService},
 		PhraseHandler:   &phraseHandler{PhraseService: s.PhraseService},
-		ChatHandler:     &chatHandler{ChatService: s.ChatService},
+		ChatHandler:     &chatHandler{chatService: s.ChatService, messageService: s.MessageService},
+		MessageHandler:  &messageHandler{messageService: s.MessageService},
 		jwtSecretKey:    jwtSecretKey,
 		Firebase:        firebase,
 	}
@@ -52,16 +54,14 @@ func (h *Handlers) SetAPIRoutes(e *echo.Echo) {
 	materialRoutes.DELETE("/:id", h.DeleteMaterial)
 	materialRoutes.GET("/:id/status", h.CheckMaterialStatus)
 	materialRoutes.GET("/:id/phrases", h.GetProcessedPhrases)
-
-	userRoutes := api.Group("/users")
-	userRoutes.PUT("/:id", h.UpdateUser)
-	userRoutes.DELETE("/:id", h.DeleteUser)
+	materialRoutes.GET("/:id/chats", h.GetChatByMaterialID)
 
 	chatRoutes := api.Group("/chat")
 	chatRoutes.POST("", h.CreateChat)
-	chatRoutes.GET("/:id", h.GetChat)
-	chatRoutes.POST("/:id/messages", h.CreateMessage)
-	chatRoutes.GET("/:id/messages", h.GetMessages)
+	chatRoutes.GET("/:chatId", h.GetChatByChatID)
+	chatRoutes.POST("/:chatId/chat", h.ChatWithGemini)
+	chatRoutes.POST("/:chatId/messages", h.CreateMessage)
+	chatRoutes.GET("/:chatId/messages", h.GetMessages)
 }
 
 func handleOptions(c echo.Context) error {

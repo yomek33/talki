@@ -43,7 +43,7 @@ func (h *userHandler) CreateUser(c echo.Context) error {
 }
 
 func (h *userHandler) UpdateUser(c echo.Context) error {
-	UserUID, err := getUserUIDByContext(c)
+	UserUID, err := getUserUIDFromContext(c)
 	if err != nil {
 		logger.Errorf("Error getting user UID from context: %v", err)
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": ErrInvalidUserToken})
@@ -71,7 +71,7 @@ func (h *userHandler) UpdateUser(c echo.Context) error {
 }
 
 func (h *userHandler) DeleteUser(c echo.Context) error {
-	UserUID, err := getUserUIDByContext(c)
+	UserUID, err := getUserUIDFromContext(c)
 	if err != nil {
 		logger.Errorf("Error getting user UID from context: %v", err)
 		return respondWithError(c, http.StatusUnauthorized, ErrInvalidUserToken)
