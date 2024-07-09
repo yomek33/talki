@@ -6,6 +6,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
+	"github.com/yomek33/talki/internal/logger"
 	"github.com/yomek33/talki/internal/services"
 )
 
@@ -26,7 +28,7 @@ func NewHandler(s *services.Services, jwtSecretKey string, firebase *Firebase) *
 		UserHandler:     &userHandler{UserService: s.UserService, jwtSecretKey: jwtSecretKey, Firebase: firebase},
 		MaterialHandler: &materialHandler{MaterialService: s.MaterialService, PhraseService: s.PhraseService},
 		PhraseHandler:   &phraseHandler{PhraseService: s.PhraseService},
-		ChatHandler:     &chatHandler{chatService: s.ChatService, messageService: s.MessageService},
+		ChatHandler:     &chatHandler{chatService: s.ChatService, messageService: s.MessageService, materialService: s.MaterialService},
 		MessageHandler:  &messageHandler{messageService: s.MessageService},
 		jwtSecretKey:    jwtSecretKey,
 		Firebase:        firebase,
@@ -60,7 +62,7 @@ func (h *Handlers) SetAPIRoutes(e *echo.Echo) {
 	chatRoutes.POST("", h.CreateChat)
 	chatRoutes.GET("/:chatId", h.GetChatByChatID)
 	chatRoutes.POST("/:chatId/chat", h.ChatWithGemini)
-	chatRoutes.POST("/:chatId/messages", h.CreateMessage)
+	chatRoutes.POST("/:chatId/message", h.CreateMessage)
 	chatRoutes.GET("/:chatId/messages", h.GetMessages)
 }
 
@@ -112,10 +114,12 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 		if he.Internal != nil {
 			message = echo.Map{"message": fmt.Sprintf("%v, %v", message, he.Internal)}
 		}
+		log.Info("HTTP Error: ", code, message)
 	}
 
 	// Log the error
 	c.Logger().Error(err)
+	logger.Errorf("Error: %v", err)
 
 	// Send JSON response
 	if !c.Response().Committed {

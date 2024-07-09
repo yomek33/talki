@@ -20,8 +20,9 @@ type ChatHandler interface {
 
 // chatHandler implements the ChatHandler interface
 type chatHandler struct {
-	chatService    services.ChatService
-	messageService services.MessageService
+	chatService     services.ChatService
+	messageService  services.MessageService
+	materialService services.MaterialService
 }
 
 // NewChatHandler creates a new instance of chatHandler
@@ -54,12 +55,27 @@ func (h *chatHandler) CreateChat(c echo.Context) error {
 		return respondWithError(c, http.StatusInternalServerError, "Could not create chat")
 	}
 
+	//一つ目のMessageを作成
+	message := models.Message{
+		ChatID:     chat.ID,
+		UserUID:    userUID,
+		Content:    "Hello",
+		SenderType: "system",
+	}
+
+	_, err = h.messageService.CreateMessage(chat.ID, &message)
+	if err != nil {
+		logger.Errorf("Error creating message: %v", err)
+		return respondWithError(c, http.StatusInternalServerError, "Could not create message")
+	}
+
 	logger.Infof("Chat created successfully")
 	return c.JSON(http.StatusCreated, createdChat)
 
 }
 
 func (h *chatHandler) GetChatByMaterialID(c echo.Context) error {
+	logger.Infof("Retrieving chat by material ID")
 	materialID, err := parseUintParam(c, "id")
 	if err != nil {
 		return respondWithError(c, http.StatusBadRequest, "Invalid material ID")
@@ -82,7 +98,7 @@ func (h *chatHandler) GetChatByMaterialID(c echo.Context) error {
 
 // GetChatByChatID retrieves a chat by its ID
 func (h *chatHandler) GetChatByChatID(c echo.Context) error {
-	id, err := parseUintParam(c, "id")
+	id, err := parseUintParam(c, "chatId")
 	if err != nil {
 		return respondWithError(c, http.StatusBadRequest, "Invalid chat ID")
 	}
