@@ -23,7 +23,7 @@ type Config struct {
 
 const (
 	// expires cookie expiration time
-	SessionDuration = time.Hour * 3
+	SessionDuration = time.Hour * 10
 )
 
 // LoadConfig loads configuration from environment variables

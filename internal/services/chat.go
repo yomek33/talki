@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/yomek33/talki/internal/logger"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/stores"
 )
@@ -13,7 +14,7 @@ type ChatService interface {
 	CreateChat(chat *models.Chat) (*models.Chat, error)
 	GetChatByChatID(id uint, userUID string) (*models.Chat, error)
 	UpdateChat(chat *models.Chat) error
-	GetChatByMaterialID(materialID uint, userUID string) (*models.Chat, error)
+	GetChatsByMaterialID(materialID uint, userUID string) ([]models.Chat, error)
 }
 
 // chatService implements the ChatService interface
@@ -39,10 +40,25 @@ func (s *chatService) CreateChat(chat *models.Chat) (*models.Chat, error) {
 }
 
 // GetChatByMaterialID retrieves a chat by its material ID
-func (s *chatService) GetChatByMaterialID(materialID uint, userUID string) (*models.Chat, error) {
+func (s *chatService) GetChatsByMaterialID(materialID uint, userUID string) ([]models.Chat, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.chatStore.GetChatByMaterialID(materialID, userUID)
+	chats, err :=s.chatStore.GetChatsByMaterialID(materialID, userUID)
+	if err != nil {
+		logger.Info("error getting chats by material ID")
+		newChat := models.Chat{
+			MaterialID: materialID,
+			UserUID:    userUID,
+		}
+		_, err := s.chatStore.CreateChat(&newChat)
+		if err != nil {
+			return nil, err
+		}
+		logger.Info("created new chat")
+		chats = append(chats, newChat)
+		return chats, nil
+	}
+	return chats, nil
 }
 
 // GetChatByChatID retrieves a chat by its ID

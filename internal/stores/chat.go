@@ -11,7 +11,7 @@ import (
 type ChatStore interface {
 	CreateChat(chat *models.Chat) (*models.Chat, error)
 	GetChatByChatID(id uint, UserUID string) (*models.Chat, error)
-	GetChatByMaterialID(materialID uint, userUID string) (*models.Chat, error)
+	GetChatsByMaterialID(materialID uint, userUID string) ([]models.Chat, error)
 	UpdateChat(chat *models.Chat) error
 }
 
@@ -39,10 +39,10 @@ func (s *chatStore) GetChatByChatID(id uint, UserUID string) (*models.Chat, erro
 	return &chat, err
 }
 
-func (s *chatStore) GetChatByMaterialID(materialID uint, userUID string) (*models.Chat, error) {
-	var chat models.Chat
-	err := s.DB.Where("material_id = ? AND user_uid = ?", materialID, userUID).Preload("Messages").First(&chat).Error
-	return &chat, err
+func (s *chatStore) GetChatsByMaterialID(materialID uint, userUID string) ([]models.Chat, error) {
+	var chats []models.Chat
+	err := s.DB.Where("material_id = ? AND user_uid = ?", materialID, userUID).Preload("Messages").First(&chats).Error
+	return chats, err
 }
 
 func (r *chatStore) UpdateChat(chat *models.Chat) error {

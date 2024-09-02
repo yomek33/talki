@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/yomek33/talki/internal/gemini"
+	"github.com/yomek33/talki/internal/logger"
 	"github.com/yomek33/talki/internal/models"
 	"github.com/yomek33/talki/internal/stores"
 	"gorm.io/gorm"
@@ -66,9 +67,9 @@ func (s *messageService) SendMessageToGemini(chatID uint, content, userUID strin
 		return "", err
 	}
 
-	if chat.PendingMessage {
-		return "", errors.New("previous message pending response")
-	}
+	// if chat.PendingMessage {
+	// 	return "", errors.New("previous message pending response")
+	// }
 
 	userMessage := &models.Message{
 		ChatID:     chatID,
@@ -77,15 +78,17 @@ func (s *messageService) SendMessageToGemini(chatID uint, content, userUID strin
 		SenderType: "user",
 	}
 
-	if _, err := s.CreateMessage(chatID, userMessage); err != nil {
-		return "", err
+	if _, err := s.store.CreateMessage(userMessage); err != nil {
+    return "", err
 	}
+	logger.Infof("User message: %s", content)
 
-	chat.PendingMessage = true
+	chat.PendingMessage ++
 	if err := s.chatStore.UpdateChat(chat); err != nil {
 		return "", err
 	}
 
+	logger.Infof("UpdateChat")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -95,17 +98,17 @@ func (s *messageService) SendMessageToGemini(chatID uint, content, userUID strin
 		return "", err
 	}
 
+	// response:="botbot"
 	botMessage := &models.Message{
 		ChatID:     chatID,
 		Content:    response,
 		SenderType: "bot",
 	}
 
-	if _, err := s.CreateMessage(chatID, botMessage); err != nil {
-		return "", err
+	if _, err := s.store.CreateMessage(botMessage); err != nil {
+    return "", err
 	}
-
-	chat.PendingMessage = false
+	//chat.PendingMessage = false
 	if err := s.chatStore.UpdateChat(chat); err != nil {
 		return "", err
 	}
@@ -114,6 +117,6 @@ func (s *messageService) SendMessageToGemini(chatID uint, content, userUID strin
 }
 
 func (s *messageService) revertPendingMessageState(chat *models.Chat) {
-	chat.PendingMessage = false
+	//chat.PendingMessage = false
 	s.chatStore.UpdateChat(chat)
 }

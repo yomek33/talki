@@ -9,5 +9,5 @@ type Word struct {
 	Text       string
 	Importance string
 	Level      string
-	Material   Material
 }
+

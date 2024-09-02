@@ -43,7 +43,7 @@ func (s *materialStore) CreateMaterial(material *models.Material) (uint, error) 
 func (s *materialStore) GetMaterialByID(id uint, UserUID string) (*models.Material, error) {
 	log.Println("store material id", id)
 	var material models.Material
-	err := s.DB.Where("id = ? AND user_uid = ?", id, UserUID).Preload("Phrases").First(&material).Error
+	err := s.DB.Where("id = ? AND user_uid = ?", id, UserUID).Preload("Phrases").Preload("Chats").First(&material).Error
 	return &material, err
 }
 

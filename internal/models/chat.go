@@ -8,7 +8,7 @@ type Chat struct {
 	MaterialID     uint      `gorm:"index" json:"material_id" validate:"required"`
 	UserUID        string    `gorm:"index" json:"user_uid" validate:"required"`
 	Messages       []Message `gorm:"foreignKey:ChatID;references:ID"`
-	PendingMessage bool      `gorm:"default:false" json:"pending_message"`
+	PendingMessage uint      `gorm: json:"pending_message"`
 }
 
 type Message struct {

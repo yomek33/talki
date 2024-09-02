@@ -48,7 +48,6 @@ func (h *chatHandler) CreateChat(c echo.Context) error {
 
 	chat.UserUID = userUID
 	chat.CreatedAt = time.Now()
-
 	createdChat, err := h.chatService.CreateChat(&chat)
 	if err != nil {
 		logger.Errorf("Error creating chat: %v", err)
@@ -71,9 +70,9 @@ func (h *chatHandler) CreateChat(c echo.Context) error {
 
 	logger.Infof("Chat created successfully")
 	return c.JSON(http.StatusCreated, createdChat)
-
 }
 
+//　もしChatが存在しない場合、createChatを呼び出す
 func (h *chatHandler) GetChatByMaterialID(c echo.Context) error {
 	logger.Infof("Retrieving chat by material ID")
 	materialID, err := parseUintParam(c, "id")
@@ -86,7 +85,7 @@ func (h *chatHandler) GetChatByMaterialID(c echo.Context) error {
 		return respondWithError(c, http.StatusUnauthorized, "Invalid user token")
 	}
 
-	chat, err := h.chatService.GetChatByMaterialID(materialID, userUID)
+	chat, err := h.chatService.GetChatsByMaterialID(materialID, userUID)
 	if err != nil {
 		logger.Errorf("Chat room not found: %v", err)
 		return respondWithError(c, http.StatusNotFound, "Chat room not found")
@@ -137,11 +136,12 @@ func (h *chatHandler) ChatWithGemini(c echo.Context) error {
 		return respondWithError(c, http.StatusBadRequest, "Invalid request data")
 	}
 
+	logger.Info("Sending message to Gemini API")
 	response, err := h.messageService.SendMessageToGemini(chatID, request.Content, userUID)
 	if err != nil {
 		logger.Errorf("Error communicating with Gemini API: %v", err)
 		return respondWithError(c, http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{"response": response})
+	return c.JSON(http.StatusOK, echo.Map{"response":  "received", "message": response})
 }
