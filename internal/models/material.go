@@ -18,4 +18,5 @@ type Material struct {
 	Phrases []Phrase `gorm:"foreignKey:MaterialID;references:ID"`
 	Status  string   `gorm:"type:varchar(255)" json:"status"`
 	Chats   []Chat   `gorm:"foreignKey:MaterialID;references:ID"`
+	Words[] Word `gorm:"foreignKey:MaterialID;references:ID"`
 }

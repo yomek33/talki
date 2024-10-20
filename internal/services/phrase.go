@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
-	"time"
+	"log"
 
 	"github.com/yomek33/talki/internal/gemini"
 	"github.com/yomek33/talki/internal/models"
@@ -35,58 +35,49 @@ func GeneratePhrases(topic string) ([]string, error) {
 }
 
 func (s *phraseService) GeneratePhrases(ctx context.Context, materialID uint, UserUID string) ([]models.Phrase, error) {
-	// log.Println("Generating phrases")
+	log.Println("Generating phrases")
 
-	// log.Println("MaterialID", materialID)
-	// log.Println("UserUID", UserUID)
-	// material, err := s.MaterialService.GetMaterialByID(materialID, UserUID)
-	// log.Println("Material", material)
-	// if err != nil {
-	// 	log.Printf("Failed to fetch material: %v", err)
-	// 	return nil, fmt.Errorf("failed to fetch material: %w", err)
-	// }
-	// if material == nil {
-	// 	log.Printf("Material is nil")
-	// 	return nil, fmt.Errorf("material is nil")
-	// }
+	log.Println("MaterialID", materialID)
+	log.Println("UserUID", UserUID)
+	material, err := s.MaterialService.GetMaterialByID(materialID, UserUID)
+	log.Println("Material", material)
+	if err != nil {
+		log.Printf("Failed to fetch material: %v", err)
+		return nil, fmt.Errorf("failed to fetch material: %w", err)
+	}
+	if material == nil {
+		log.Printf("Material is nil")
+		return nil, fmt.Errorf("material is nil")
+	}
 
-	// // Check if GeminiClient is nil
-	// if s.GeminiClient == nil {
-	// 	log.Printf("GeminiClient is nil")
-	// 	return nil, fmt.Errorf("GeminiClient is nil")
-	// }
+	// Check if GeminiClient is nil
+	if s.GeminiClient == nil {
+		log.Printf("GeminiClient is nil")
+		return nil, fmt.Errorf("GeminiClient is nil")
+	}
 
-	// log.Printf("Generating phrases for material %d", materialID)
+	log.Printf("Generating phrases for material %d", materialID)
 
-	// // Generate phrases using GeminiClientx
-	// phraseTexts, err := s.GeminiClient.GeneratePhrases(ctx, material.Content)
-	// if err != nil {
-	// 	log.Printf("Failed to generate phrases: %v", err)
-	// 	return nil, fmt.Errorf("failed to generate phrases: %w", err)
-	// }
-	// if phraseTexts == nil {
-	// 	log.Printf("Generated phrases are nil")
-	// 	return nil, fmt.Errorf("generated phrases are nil")
-	// }
-
-	// var phrases []models.Phrase
-	// for _, phraseText := range phraseTexts {
-	// 	phrases = append(phrases, models.Phrase{
-	// 		MaterialID: materialID,
-	// 		Text:       phraseText,
-	// 		Importance: determineImportance(phraseText),
-	// 	})
-	// }
+	// Generate phrases using GeminiClientx
+	phraseTexts, err := s.GeminiClient.GeneratePhrases(ctx, material.Content)
+	if err != nil {
+		log.Printf("Failed to generate phrases: %v", err)
+		return nil, fmt.Errorf("failed to generate phrases: %w", err)
+	}
+	if phraseTexts == nil {
+		log.Printf("Generated phrases are nil")
+		return nil, fmt.Errorf("generated phrases are nil")
+	}
 
 	var phrases []models.Phrase
-	time.Sleep(2 * time.Second)
-	for i := range 10 {
+	for _, phraseText := range phraseTexts {
 		phrases = append(phrases, models.Phrase{
 			MaterialID: materialID,
-			Text:       fmt.Sprintf("phrase %d", i),
-			Importance: "high",
+			Text:       phraseText,
+			Importance: determineImportance(phraseText),
 		})
 	}
+
 	return phrases, nil
 }
 
@@ -100,6 +91,6 @@ func (s *phraseService) StorePhrases(materialID uint, phrases []models.Phrase) e
 	return nil
 }
 
-func determineImportance(phrase string) string {
+func determineImportance(_ string) string {
 	return "high"
 }

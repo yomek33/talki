@@ -13,14 +13,14 @@ type User struct {
 	Materials []Material `gorm:"foreignKey:UserUID;references:UserUID"`
 }
 
-type Dialogue struct {
-	gorm.Model
-	ID           int       `gorm:"primaryKey"`
-	UserUID      string    `gorm:"index" validate:"required"`
-	InputText    string    `validate:"requaired"`
-	ResponseText string    `validate:"required"`
-	CreatedAt    time.Time `validate:"required"`
-}
+// type Dialogue struct {
+// 	gorm.Model
+// 	ID           int       `gorm:"primaryKey"`
+// 	UserUID      string    `gorm:"index" validate:"required"`
+// 	InputText    string    `validate:"requaired"`
+// 	ResponseText string    `validate:"required"`
+// 	CreatedAt    time.Time `validate:"required"`
+// }
 
 type Progress struct {
 	gorm.Model
